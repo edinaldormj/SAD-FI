@@ -36,7 +36,7 @@ SAD-FI/
 
 ## 🧩 Diagrama de Classes
 
-![Diagrama de Classes](docs\out\docs\classes.png)
+![Diagrama de Classes](docs/out/docs/classes/classes.png)
 
 > A imagem acima é gerada a partir do arquivo `docs/classes.puml` com o auxílio do PlantUML.
 
