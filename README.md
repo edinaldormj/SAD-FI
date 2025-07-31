@@ -28,25 +28,58 @@ SAD-FI/
 ├── notebooks/              # Notebooks Jupyter para orquestração e visualização
 ├── src/                    # Módulos Python com a lógica do domínio
 ├── resultados/             # Gráficos, tabelas e saídas geradas
+├── docs/                   # Diagramas UML e documentação do sistema
 ├── requirements.txt        # Bibliotecas utilizadas
 ├── README.md               # Este arquivo
 └── .gitignore              # Exclusões de versionamento
 ```
 
+## 🧩 Diagrama de Classes
+
+![Diagrama de Classes](docs/out/classes/classes.png)
+
+> A imagem acima é gerada a partir do arquivo `docs/classes.puml` com o auxílio do PlantUML.
+
+---
+
 ## 🚀 Como executar
 
-1. Crie e ative um ambiente virtual:
+## ▶️ Como Executar o Projeto
+
+1. Clone este repositório:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # ou venv\Scripts\activate no Windows
+   git clone https://github.com/seu-usuario/sad-fi.git
+   cd sad-fi
    ```
 
-2. Instale as dependências:
+2. Crie o ambiente virtual:
+
+   ```bash
+   python -m venv venv
+   ```
+
+3. Ative o ambiente virtual:
+
+   * **Windows**:
+
+     ```bash
+     venv\Scripts\activate
+     ```
+   * **Linux/macOS**:
+
+     ```bash
+     source venv/bin/activate
+     ```
+
+4. Instale as dependências:
+
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Execute os notebooks desejados na pasta `notebooks/`.
+5. Execute os notebooks disponíveis na pasta `notebooks/`.
+
+---
 
 ## 🧪 Testes
 
