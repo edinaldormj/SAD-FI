@@ -1,0 +1,26 @@
+@startuml 
+Title Diagrama de Estados SAD-FI
+
+[*] --> EsperandoEntrada
+
+EsperandoEntrada --> MensagemErro : entrada inválida
+EsperandoEntrada --> ConfigurandoSimulacao : entrada válida
+
+ConfigurandoSimulacao --> ExecutandoSimulacao
+
+ExecutandoSimulacao --> SimulacaoConcluida
+
+SimulacaoConcluida --> ExibirGrafico
+SimulacaoConcluida --> CompararModalidades
+SimulacaoConcluida --> MostrarRecomendacao
+SimulacaoConcluida --> VerResumo
+
+ExibirGrafico --> EsperandoNovaAcao
+CompararModalidades --> EsperandoNovaAcao
+MostrarRecomendacao --> EsperandoNovaAcao
+VerResumo --> EsperandoNovaAcao
+
+EsperandoNovaAcao --> EsperandoEntrada : nova simulação
+EsperandoNovaAcao --> [*] : encerrar
+
+@enduml

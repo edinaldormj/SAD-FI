@@ -1,0 +1,18 @@
+@startuml
+title Diagrama de Sequência SAD-FI
+
+actor Usuario
+
+Usuario -> Interface : fornecer dados de simulação
+Interface -> ControladorApp : executar_simulacao()
+ControladorApp -> SimuladorSAC : simular(financiamento)
+SimuladorSAC --> ControladorApp : SimulacaoResultado
+ControladorApp -> Interface : mostrar resultado
+
+Usuario -> Interface : pedir comparação
+Interface -> ControladorApp : comparar_modalidades()
+ControladorApp -> ComparadorModalidades : comparar(res1, res2)
+ComparadorModalidades --> ControladorApp : recomendação
+ControladorApp -> Interface : exibir recomendação
+
+@enduml

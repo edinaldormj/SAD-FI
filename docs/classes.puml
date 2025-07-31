@@ -1,0 +1,67 @@
+@startuml
+Title Diagrama de Classes SAD-FI 
+
+class Financiamento {
+  - valor_total: float
+  - entrada: float
+  - prazo_anos: int
+  - sistema: str
+  + valor_financiado(): float
+}
+
+class Parcela {
+  - numero: int
+  - amortizacao: float
+  - juros: float
+  - valor_total: float
+  - saldo_devedor: float
+}
+
+class SimuladorSAC {
+  + simular(fin: Financiamento): SimulacaoResultado
+}
+
+class SimuladorSAC_IPCA {
+  + simular(fin: Financiamento, ipca: TabelaIPCA): SimulacaoResultado
+}
+
+class SimulacaoResultado {
+  - lista_parcelas: list<Parcela>
+  - total_pago: float
+  - total_juros: float
+}
+
+class ComparadorModalidades {
+  + comparar(res1: SimulacaoResultado, res2: SimulacaoResultado): str
+}
+
+class AntecipadorParcelas {
+  + antecipar(res: SimulacaoResultado, parcela_num: int, valor: float): SimulacaoResultado
+}
+
+class TabelaIPCA {
+  - dados: DataFrame
+  + get_ipca(mes: int): float
+}
+
+class LeitorCSV {
+  + ler_csv(caminho: str): DataFrame
+}
+
+class ControladorApp {
+  + executar_simulacao(...)
+  + gerar_resumo(...)
+}
+
+Financiamento --> Parcela : compõe
+SimuladorSAC --> SimulacaoResultado
+SimuladorSAC_IPCA --> SimulacaoResultado
+ComparadorModalidades --> SimulacaoResultado
+AntecipadorParcelas --> SimulacaoResultado
+TabelaIPCA --> SimuladorSAC_IPCA
+ControladorApp --> SimuladorSAC
+ControladorApp --> SimuladorSAC_IPCA
+ControladorApp --> ComparadorModalidades
+ControladorApp --> AntecipadorParcelas
+
+@enduml
