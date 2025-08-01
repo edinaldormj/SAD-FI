@@ -5,24 +5,24 @@ Planejamento diário estimado para conclusão da Sprint 1 em ~6 dias úteis.
 ---
 
 ## ✅ Dia 1 – Fundamentos
-- [ ] Escrever testes para `Financiamento` (1h)
-- [ ] Implementar classe `Parcela` (1h)
+- [x] Escrever testes para `Financiamento` (1h)
+- [x] Implementar classe `Parcela` (1h)
 
 ---
 
 ## ✅ Dia 2 – Simulação
-- [ ] Implementar `SimuladorSAC` (2h)
+- [x] Implementar `SimuladorSAC` (2h)
 
 ---
 
 ## ✅ Dia 3 – Testes e Validação
-- [ ] Escrever testes para `SimuladorSAC` (1h)
-- [ ] Validar consistência dos dados gerados (1h)
+- [x] Escrever testes para `SimuladorSAC` (1h)
+- [x] Validar consistência dos dados gerados (1h)
 
 ---
 
 ## ✅ Dia 4 – Visualização
-- [ ] Gerar visualização da simulação (1h30)
+- [x] Gerar visualização da simulação (1h30)
 - [ ] Refino e verificação manual (30min)
 
 ---

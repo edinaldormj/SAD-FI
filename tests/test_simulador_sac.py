@@ -48,5 +48,28 @@ saldo_final = parcelas[-1].saldo_devedor - amortizacao
 print("📊 Teste 3 – Saldo final aproximado:", saldo_final)
 assert abs(saldo_final) < 1e-2
 
-print("✅ Todos os testes para SimuladorSAC passaram com sucesso!")
+print("\n📊 Validação da consistência dos dados gerados")
+
+# 1. Soma das amortizações
+soma_amortizacoes = sum(p.amortizacao for p in parcelas)
+assert abs(soma_amortizacoes - valor_financiado) < 1e-2, "❌ Erro na soma das amortizações"
+
+# 2. Soma dos valores totais pagos
+soma_valor_total = sum(p.valor_total for p in parcelas)
+print(f"💰 Total pago ao longo do financiamento: R$ {soma_valor_total:.2f}")
+
+# 3. Verificação do saldo final
+saldo_estimado_final = parcelas[-1].saldo_devedor - amortizacao
+assert abs(saldo_estimado_final) < 1e-2, "❌ Saldo final não está zerando corretamente"
+
+# 4. Parcelas decrescentes
+parcelas_totais = [p.valor_total for p in parcelas]
+decrescente = all(parcelas_totais[i] >= parcelas_totais[i+1] for i in range(len(parcelas_totais) - 1))
+assert decrescente, "❌ Parcelas não estão decrescendo (característica do SAC)"
+
+print("✅ Validação da consistência passou com sucesso!")
+input("Pressione Enter para sair...")
+
+
+print("\n\n✅ Todos os testes para SimuladorSAC passaram com sucesso!")
 input("Pressione Enter para sair...")
