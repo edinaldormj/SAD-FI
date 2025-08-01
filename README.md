@@ -27,7 +27,7 @@ SAD-FI/
 ├── dados/                  # Arquivos CSV com dados de entrada (ex.: IPCA)
 ├── notebooks/              # Notebooks Jupyter para orquestração e visualização
 ├── src/                    # Módulos Python com a lógica do domínio
-├── tests/                  # Classes para testes (TDD)
+├── tests/                  # Scripts para testes (TDD)
 ├── resultados/             # Gráficos, tabelas e saídas geradas
 ├── docs/                   # Diagramas UML e documentação do sistema
 ├── requirements.txt        # Bibliotecas utilizadas
