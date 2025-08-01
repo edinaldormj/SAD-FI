@@ -27,6 +27,7 @@ SAD-FI/
 ├── dados/                  # Arquivos CSV com dados de entrada (ex.: IPCA)
 ├── notebooks/              # Notebooks Jupyter para orquestração e visualização
 ├── src/                    # Módulos Python com a lógica do domínio
+├── tests/                  # Classes para testes (TDD)
 ├── resultados/             # Gráficos, tabelas e saídas geradas
 ├── docs/                   # Diagramas UML e documentação do sistema
 ├── requirements.txt        # Bibliotecas utilizadas
@@ -83,7 +84,7 @@ SAD-FI/
 
 ## 🧪 Testes
 
-Um notebook de testes (`testes_TDD.ipynb`) está disponível para conduzir o desenvolvimento com base em TDD (Test-Driven Development).
+Os testes são organizados na pasta tests/, com scripts dedicados para cada componente do sistema. O desenvolvimento segue abordagem TDD (Test-Driven Development), utilizando scripts simples com assert e print para facilitar a verificação manual. Futuramente, poderá ser adotado pytest para maior robustez e automação.
 
 ## 📄 Licença
 
