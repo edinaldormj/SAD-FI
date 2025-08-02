@@ -23,7 +23,7 @@ Planejamento diário estimado para conclusão da Sprint 1 em ~6 dias úteis.
 
 ## ✅ Dia 4 – Visualização
 - [x] Gerar visualização da simulação (1h30)
-- [ ] Refino e verificação manual (30min)
+- [x] Refino e verificação manual (30min)
 
 ---
 
