@@ -86,10 +86,12 @@ SAD-FI/
 
 Os testes são organizados na pasta tests/, com scripts dedicados para cada componente do sistema. O desenvolvimento segue abordagem TDD (Test-Driven Development), utilizando scripts simples com assert e print para facilitar a verificação manual. Futuramente, poderá ser adotado pytest para maior robustez e automação.
 
+
 ## 📄 Licença
 
 Projeto acadêmico sem fins comerciais.
 
+---
 
 ## 🗂️ Sprint 1 – Resumo das Issues
 
@@ -105,3 +107,9 @@ Projeto acadêmico sem fins comerciais.
 | 8  | Refinar visualizações com foco em clareza e escala          | 🟨 Visualização   | ✅     | Sprint 1  |
 | 9  | Versionar scripts, notebooks e arquivos auxiliares           | 🟩 Documentação   | ✅     | Sprint 1  |
 | 10 | Criar planejamento e backlog de funcionalidades futuras      | 🟩 Documentação   | 🔲     | Sprint 1  |
+
+## 📚 Histórico de Comandos Git
+
+A lista de comandos Git utilizados durante a Sprint 1 está disponível [neste arquivo separado](docs/comandos_git.md).
+
+
