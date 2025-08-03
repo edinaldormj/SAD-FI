@@ -89,3 +89,19 @@ Os testes são organizados na pasta tests/, com scripts dedicados para cada comp
 ## 📄 Licença
 
 Projeto acadêmico sem fins comerciais.
+
+
+## 🗂️ Sprint 1 – Resumo das Issues
+
+| #  | Título da Issue                                              | Etiqueta         | Status | Milestone |
+|----|--------------------------------------------------------------|------------------|--------|-----------|
+| 1  | Inicializar repositório com estrutura de pastas              | 🟩 Documentação   | ✅     | Sprint 1  |
+| 2  | Configurar ambiente virtual e requirements.txt               | 🟩 Documentação   | ✅     | Sprint 1  |
+| 3  | Implementar classe Financiamento                             | 🟦 Técnica        | ✅     | Sprint 1  |
+| 4  | Implementar classe Parcela                                   | 🟦 Técnica        | ✅     | Sprint 1  |
+| 5  | Implementar classe SimuladorSAC                              | 🟦 Técnica        | ✅     | Sprint 1  |
+| 6  | Escrever testes para Financiamento, Parcela e SimuladorSAC  | 🟪 Testes         | ✅     | Sprint 1  |
+| 7  | Gerar notebook de visualização da simulação SAC             | 🟨 Visualização   | ✅     | Sprint 1  |
+| 8  | Refinar visualizações com foco em clareza e escala          | 🟨 Visualização   | ✅     | Sprint 1  |
+| 9  | Versionar scripts, notebooks e arquivos auxiliares           | 🟩 Documentação   | ✅     | Sprint 1  |
+| 10 | Criar planejamento e backlog de funcionalidades futuras      | 🟩 Documentação   | 🔲     | Sprint 1  |
