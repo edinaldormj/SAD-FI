@@ -28,11 +28,11 @@ Planejamento diário estimado para conclusão da Sprint 1 em ~6 dias úteis.
 ---
 
 ## ✅ Dia 5 – Organização
-- [ ] Documentar comandos Git usados (30min)
-- [ ] Adicionar issues no GitHub (30min)
-- [ ] Limpeza final e commit (30min)
+- [x] Documentar comandos Git usados (30min)
+- [x] Adicionar issues no GitHub (30min)
+- [x] Limpeza final e commit (30min)
 
 ---
 
 ## ✅ Dia 6 – Reserva Estratégica
-- [ ] Ajustes finais ou tarefas não concluídas (2h)
+- [x] Ajustes finais ou tarefas não concluídas (2h)
