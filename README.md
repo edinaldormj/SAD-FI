@@ -21,7 +21,7 @@ O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparaç�
 
 ## 📁 Estrutura do Projeto
 
-A estrutura completa e detalhada do projeto, com explicações de cada pasta e camada da arquitetura, está documentada no arquivo [`estrutura_projeto.md`](estrutura_projeto.md).
+A estrutura completa e detalhada do projeto, com explicações de cada pasta e camada da arquitetura, está documentada no arquivo [`estrutura_projeto.md`](docs/estrutura_projeto.md).
 
 ## 🧱 Arquitetura em Camadas
 
