@@ -1,22 +1,32 @@
-@startuml
-title Arquitetura em Camadas - SAD-FI
+@startuml ArquiteturaCamadas
 
-actor "Usuário Final" as User
+title Arquitetura em Camadas – SAD-FI
 
-rectangle "CAMADA DE APRESENTAÇÃO (UI)\n---\n• Entrada dos parâmetros\n• Exibição de resultados e gráficos" as UI
+skinparam rectangle {
+  BackgroundColor #F0F0F0
+  BorderColor black
+  RoundCorner 15
+}
+skinparam defaultFontName "Arial"
+skinparam defaultTextAlignment center
+skinparam linetype ortho
 
-rectangle "CAMADA DE APLICAÇÃO (CONTROLE)\n---\n• Valida dados\n• Coordena simulação\n• Formata saída" as Controller
+actor UsuarioFinal as Usuario
 
-rectangle "CAMADA DE DOMÍNIO (NEGÓCIO)\n---\n• Simulação SAC e SAC+IPCA\n• Cálculos financeiros" as Domain
+rectangle "**Presentation Layer**\n----\nRecebe entradas do usuário e exibe resultados" as Presentation
+rectangle "**Application Layer**\n----\nOrquestra o fluxo entre as camadas" as Application
+rectangle "**Domain Layer**\n----\nContém as regras de negócio e entidades centrais" as Domain
+rectangle "**Infrastructure Layer**\n----\nFornece acesso a dados e serviços externos" as Infrastructure
 
-rectangle "CAMADA DE DADOS (CSV/LOCAL)\n---\n• Carrega dados\n• Pré-processamento" as Data
-
-User --> UI
-UI --> Controller
-Controller --> Domain
-Domain --> Data
+Usuario --> Presentation
+Presentation --> Application
+Application --> Domain
+Domain --> Infrastructure
 
 @enduml
+
+
+
 
 
 

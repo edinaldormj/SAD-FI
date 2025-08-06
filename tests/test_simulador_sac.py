@@ -2,9 +2,9 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from financiamento import Financiamento
-from simulador_sac import SimuladorSAC
-from parcela import Parcela
+from domain.financiamento import Financiamento
+from domain.simulador_sac import SimuladorSAC
+from domain.parcela import Parcela
 
 print("🔧 Iniciando teste de SimuladorSAC")
 

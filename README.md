@@ -1,4 +1,3 @@
-
 # SAD-FI – Sistema de Apoio à Decisão para Financiamento Imobiliário
 
 Este é um projeto de MVP desenvolvido como trabalho final de pós-graduação em Ciência de Dados e Inteligência Artificial.  
@@ -22,18 +21,15 @@ O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparaç�
 
 ## 📁 Estrutura do Projeto
 
-```
-SAD-FI/
-├── dados/                  # Arquivos CSV com dados de entrada (ex.: IPCA)
-├── notebooks/              # Notebooks Jupyter para orquestração e visualização
-├── src/                    # Módulos Python com a lógica do domínio
-├── tests/                  # Scripts para testes (TDD)
-├── resultados/             # Gráficos, tabelas e saídas geradas
-├── docs/                   # Diagramas UML e documentação do sistema
-├── requirements.txt        # Bibliotecas utilizadas
-├── README.md               # Este arquivo
-└── .gitignore              # Exclusões de versionamento
-```
+A estrutura completa e detalhada do projeto, com explicações de cada pasta e camada da arquitetura, está documentada no arquivo [`estrutura_projeto.md`](estrutura_projeto.md).
+
+## 🧱 Arquitetura em Camadas
+
+O sistema segue uma arquitetura em camadas com separação entre apresentação, aplicação, domínio e infraestrutura.
+
+![Arquitetura SAD-FI](docs/out/docs/camadas/ArquiteturaCamadas.png)
+
+> A imagem acima representa a arquitetura conceitual do sistema SAD-FI e é gerada a partir de `docs/camadas.puml` com o PlantUML.
 
 ## 🧩 Diagrama de Classes
 
@@ -62,12 +58,10 @@ SAD-FI/
 3. Ative o ambiente virtual:
 
    * **Windows**:
-
      ```bash
      venv\Scripts\activate
      ```
    * **Linux/macOS**:
-
      ```bash
      source venv/bin/activate
      ```
@@ -85,7 +79,6 @@ SAD-FI/
 ## 🧪 Testes
 
 Os testes são organizados na pasta tests/, com scripts dedicados para cada componente do sistema. O desenvolvimento segue abordagem TDD (Test-Driven Development), utilizando scripts simples com assert e print para facilitar a verificação manual. Futuramente, poderá ser adotado pytest para maior robustez e automação.
-
 
 ## 📄 Licença
 
@@ -111,5 +104,6 @@ Projeto acadêmico sem fins comerciais.
 ## 📚 Histórico de Comandos Git
 
 A lista de comandos Git utilizados durante a Sprint 1 está disponível [neste arquivo separado](docs/comandos_git.md).
+
 
 

@@ -1,4 +1,4 @@
-from parcela import Parcela
+from domain.parcela import Parcela
 
 class SimuladorSAC:
     """

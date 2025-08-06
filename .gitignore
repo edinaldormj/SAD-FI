@@ -10,3 +10,5 @@ __pycache__/
 .DS_Store
 salvar_issues.ps1
 issues_por_nome.txt
+gerar_estrutura.py
+estrutura.txt
