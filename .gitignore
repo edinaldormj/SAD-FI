@@ -8,3 +8,5 @@ __pycache__/
 *.pyd
 *.db
 .DS_Store
+salvar_issues.ps1
+issues_por_nome.txt

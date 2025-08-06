@@ -1,0 +1,24 @@
+@startuml
+title Arquitetura em Camadas - SAD-FI
+
+actor "Usuário Final" as User
+
+rectangle "CAMADA DE APRESENTAÇÃO (UI)\n---\n• Entrada dos parâmetros\n• Exibição de resultados e gráficos" as UI
+
+rectangle "CAMADA DE APLICAÇÃO (CONTROLE)\n---\n• Valida dados\n• Coordena simulação\n• Formata saída" as Controller
+
+rectangle "CAMADA DE DOMÍNIO (NEGÓCIO)\n---\n• Simulação SAC e SAC+IPCA\n• Cálculos financeiros" as Domain
+
+rectangle "CAMADA DE DADOS (CSV/LOCAL)\n---\n• Carrega dados\n• Pré-processamento" as Data
+
+User --> UI
+UI --> Controller
+Controller --> Domain
+Domain --> Data
+
+@enduml
+
+
+
+
+
