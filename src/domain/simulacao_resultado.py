@@ -1,5 +1,42 @@
 class SimulacaoResultado:
-    def __init__(self, lista_parcelas):
-        self.lista_parcelas = lista_parcelas
-        self.total_pago = sum(p.valor_total for p in lista_parcelas)
-        self.total_juros = sum(p.juros for p in lista_parcelas)
+    """
+    Representa o resultado de uma simulação de financiamento.
+
+    Armazena a lista de parcelas geradas, o valor total pago ao longo do tempo
+    e o total de juros pagos.
+    """
+
+    def __init__(self, parcelas: list):
+        """
+        Inicializa o resultado com a lista de parcelas.
+
+        Parâmetros:
+        parcelas (List[Parcela]): Lista de objetos Parcela simulados.
+        """
+        self.parcelas = parcelas
+        self.total_pago = sum(p.valor_total for p in parcelas)
+        self.total_juros = sum(p.juros for p in parcelas)
+
+    def __repr__(self):
+        """
+        Representação resumida do resultado, útil para debug e logs.
+        """
+        return (
+            f"SimulacaoResultado("
+            f"parcelas={len(self.parcelas)}, "
+            f"total_pago={self.total_pago:.2f}, "
+            f"total_juros={self.total_juros:.2f})"
+        )
+
+    def to_dict_resumo(self):
+        """
+        Retorna um dicionário com o resumo numérico da simulação.
+
+        Retorno:
+        dict: {'parcelas': int, 'total_pago': float, 'total_juros': float}
+        """
+        return {
+            "parcelas": len(self.parcelas),
+            "total_pago": self.total_pago,
+            "total_juros": self.total_juros
+        }

@@ -4,12 +4,15 @@ import os
 print("🔧 Iniciando teste de Financiamento")
 
 # Configura o path para importar de src/
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
 print("📁 Caminho src/ adicionado ao sys.path")
 
 # Tenta importar Financiamento
 try:
-    from financiamento import Financiamento
+    from domain.financiamento import Financiamento
     print("✅ Importação bem-sucedida")
 except Exception as e:
     print(f"❌ Erro ao importar: {e}")

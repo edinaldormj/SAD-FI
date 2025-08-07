@@ -1,0 +1,135 @@
+﻿🔹 Título: Escrever testes para recomendação automática
+🏷️ Labels: Crítica, Testes
+📝 Conteúdo:
+Validar o comportamento da lógica de recomendação automática, assegurando que o sistema indique corretamente a modalidade mais vantajosa ao usuário.
+
+---
+
+🔹 Título: Escrever testes para função de exportação CSV
+🏷️ Labels: Visualização, Testes
+📝 Conteúdo:
+Verificar se os arquivos CSV gerados pelas simulações apresentam integridade de dados, estrutura legível e compatibilidade com ferramentas de análise.
+
+---
+
+🔹 Título: Escrever testes para ComparadorModalidades
+🏷️ Labels: Crítica, Testes
+📝 Conteúdo:
+Criar testes para a função de comparação entre modalidades, garantindo que a recomendação gerada seja consistente com os custos simulados.
+
+---
+
+🔹 Título: Escrever testes para SimuladorSAC_IPCA
+🏷️ Labels: Técnica, Testes
+📝 Conteúdo:
+Implementar testes para o novo simulador SAC com IPCA+, validando o comportamento com diferentes séries de inflação e verificando a consistência dos cálculos.
+
+---
+
+🔹 Título: Escrever testes para TabelaIPCA
+🏷️ Labels: Técnica, Testes
+📝 Conteúdo:
+Desenvolver testes automatizados para a classe TabelaIPCA, garantindo sua estabilidade e aderência aos dados da inflação usados nas simulações.
+
+---
+
+🔹 Título: Documentar mudanças e extensões realizadas na Sprint 2
+🏷️ Labels: Documentação
+📝 Conteúdo:
+Registrar todas as alterações, melhorias e novas funcionalidades implementadas na Sprint 2, incluindo código, estrutura e documentação relevante.
+
+---
+
+🔹 Título: Criar esboço de interface gráfica para usuários leigos
+🏷️ Labels: Documentação, Visualização
+📝 Conteúdo:
+Planejar uma interface gráfica amigável que simule a experiência do usuário final com o sistema, com base no diagrama de estados e sequência.
+
+---
+
+🔹 Título: Exportar cronograma da simulação em CSV
+🏷️ Labels: Técnica
+📝 Conteúdo:
+Permitir exportação do cronograma gerado por uma simulação para um arquivo .csv, com estrutura clara, cabeçalhos legíveis e dados completos.
+
+---
+
+🔹 Título: Implementar regra simples de recomendação
+🏷️ Labels: Visualização, Crítica
+📝 Conteúdo:
+Criar lógica básica para recomendar a melhor modalidade com base no custo total, exibindo um texto amigável no resultado da comparação.
+
+---
+
+🔹 Título: Calcular e exibir custo total de cada modalidade
+🏷️ Labels: Visualização, Crítica
+📝 Conteúdo:
+Implementar mecanismo de cálculo de custo total (soma das parcelas) para cada simulação, com destaque visual para a modalidade mais vantajosa.
+
+---
+
+🔹 Título: Criar função de comparação entre SAC fixo e SAC IPCA+
+🏷️ Labels: Técnica, Crítica
+📝 Conteúdo:
+Desenvolver a função comparar() na classe ComparadorModalidades, permitindo análise objetiva entre modalidades.
+
+---
+
+🔹 Título: Ajustar simulador para taxas de juros variáveis
+🏷️ Labels: Técnica
+📝 Conteúdo:
+Modificar o comportamento do simulador para aceitar variações mensais de taxas de juros.
+
+---
+
+🔹 Título: Implementar Simulador SAC com IPCA+
+🏷️ Labels: Técnica, Crítica
+📝 Conteúdo:
+Criar a classe SimuladorSAC_IPCA para realizar simulações de financiamentos com taxa indexada.
+
+---
+
+🔹 Título: Coletar e validar dados históricos do IPCA
+🏷️ Labels: Técnica, Documentação
+📝 Conteúdo:
+Obter a série histórica do IPCA, tratá-la e armazená-la para uso em simulações indexadas.
+Esta tarefa corresponde às camadas de Dados e Aplicação.
+
+---
+
+🔹 Título: Criar planejamento e backlog de funcionalidades futuras
+🏷️ Labels: Documentação
+📝 Conteúdo:
+### 🎯 Objetivo
+
+Estruturar o backlog das funcionalidades que deverão ser desenvolvidas nas próximas Sprints, com base nas fundações técnicas consolidadas durante a Sprint 1.
+
+A reorientação estratégica da Sprint 1 priorizou a implementação estável do simulador SAC com taxa fixa, testes e visualizações. Esta issue, inicialmente prevista para a Sprint 1, foi **reprogramada para a Sprint 2**, onde será devidamente expandida.
+
+---
+
+### 📌 Funcionalidades a planejar para as próximas etapas:
+
+#### 📈 Dados e simulações
+- [ ] Coletar série histórica do IPCA (CSV ou API do BACEN)
+- [ ] Implementar modelo SAC com IPCA+ (taxa indexada)
+- [ ] Tratar e simular diferentes cenários com entrada variável
+
+#### ⚖️ Comparador de modalidades
+- [ ] Criar função de comparação entre SAC fixo e SAC IPCA+
+- [ ] Calcular custo total efetivo de cada modalidade
+- [ ] Adicionar regra de recomendação básica (ex: menor custo total)
+
+#### 📤 Exportação
+- [ ] Criar botão ou função para exportar o cronograma em CSV
+
+#### 🧠 Interface amigável
+- [ ] Planejar esboço de uma interface gráfica simples para leigos
+
+---
+
+### 🔁 Status:
+Reprogramada para a **Sprint 2 – Lógica de comparação e extensões**
+
+---
+
