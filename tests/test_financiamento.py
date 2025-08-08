@@ -1,12 +1,12 @@
-import sys
 import os
+import sys
 
-print("🔧 Iniciando teste de Financiamento")
-
-# Configura o path para importar de src/
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
+
+
+print("🔧 Iniciando teste de Financiamento")
 
 print("📁 Caminho src/ adicionado ao sys.path")
 

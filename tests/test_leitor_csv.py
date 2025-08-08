@@ -3,7 +3,10 @@ import sys
 import pandas as pd
 
 # Garante que src/ está no path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
 
 from infrastructure.data.leitor_csv import ler_csv
 

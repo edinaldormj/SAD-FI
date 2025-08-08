@@ -2,7 +2,10 @@ import os
 import sys
 
 # Garante que o src/ esteja no sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
 
 from infrastructure.data.tabela_ipca import TabelaIPCA
 
@@ -19,14 +22,14 @@ except Exception as e:
     print(f"❌ Erro ao instanciar TabelaIPCA: {e}")
     assert False
 
-# 🧪 Teste 2 – Retorno correto do primeiro mês
+# 🧪 Teste 2 – Retorno correto do segundo mês (IPCA negativo)
 try:
-    valor_mes1 = tabela.get_ipca(1)
-    print(f"📊 IPCA mês 1: {valor_mes1:.6f}")
-    assert isinstance(valor_mes1, float)
-    assert abs(valor_mes1 - (-0.0002)) < 0.001  # Exemplo: -0,02% convertido para -0.0002
+    valor_mes2 = tabela.get_ipca(2)
+    print(f"📊 IPCA mês 2: {valor_mes2:.6f}")
+    assert isinstance(valor_mes2, float)
+    assert abs(valor_mes2 - (-0.0002)) < 0.001  # Exemplo: -0,02% convertido para -0.0002
 except Exception as e:
-    print(f"❌ Erro ao consultar IPCA do mês 1: {e}")
+    print(f"❌ Erro ao consultar IPCA do mês 2: {e}")
     assert False
 
 # 🧪 Teste 3 – Mês fora do intervalo

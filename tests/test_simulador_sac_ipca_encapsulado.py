@@ -2,7 +2,9 @@ import os
 import sys
 
 # Garante que src/ esteja no sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
 from domain.financiamento import Financiamento
 from domain.simulador_sac_ipca import SimuladorSAC_IPCA
