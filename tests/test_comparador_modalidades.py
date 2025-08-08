@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Garante que o path da src/ seja reconhecido
+# Ajuste do path para importar src/
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
@@ -10,10 +10,17 @@ from domain.simulacao_resultado import SimulacaoResultado
 from domain.parcela import Parcela
 from domain.comparador import ComparadorModalidades
 
-
 def criar_resultado_simulado(total, parcelas=3):
+    """
+    Gera um SimulacaoResultado artificial, com amortização + juros.
+    """
     valor_parcela = total / parcelas
-    lista = [Parcela(i+1, 0, valor_parcela, valor_parcela, 0) for i in range(parcelas)]
+    amortizacao = valor_parcela * 0.6
+    juros = valor_parcela * 0.4
+    lista = [
+        Parcela(i+1, amortizacao, juros, amortizacao + juros, 0)
+        for i in range(parcelas)
+    ]
     return SimulacaoResultado(lista)
 
 def testar_comparador():
@@ -59,3 +66,4 @@ def testar_comparador():
 
 if __name__ == "__main__":
     testar_comparador()
+
