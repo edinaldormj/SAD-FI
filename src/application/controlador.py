@@ -1,3 +1,4 @@
+import os
 from domain.financiamento import Financiamento
 from domain.simulador_sac import SimuladorSAC
 from domain.simulador_sac_ipca import SimuladorSAC_IPCA
@@ -46,15 +47,22 @@ class ControladorApp:
                 dados_entrada["taxa_juros_anual"]
             )
         elif dados_entrada["sistema"] == "SAC_IPCA":
-            tabela_ipca = TabelaIPCA(dados_entrada["caminho_ipca"])
+            # 📌 Garante que o caminho para o CSV do IPCA seja absoluto
+            caminho_ipca = os.path.abspath(dados_entrada["caminho_ipca"])
+
+            # 🔍 Verifica se o arquivo existe antes de prosseguir
+            if not os.path.exists(caminho_ipca):
+                raise FileNotFoundError(f"Arquivo do IPCA não encontrado: {caminho_ipca}")
+
+            # 📥 Carrega a tabela IPCA a partir do caminho informado
+            tabela_ipca = TabelaIPCA(caminho_ipca)
+
+            # ▶️ Cria o simulador SAC+IPCA usando o financiamento e a tabela de índices
             simulador = SimuladorSAC_IPCA(financiamento, tabela_ipca)
         else:
             raise ValueError("Sistema de amortização não suportado.")
 
         return simulador.simular()
-
-
-
 
     def comparar_modalidades(self, resultado1, resultado2) -> str:
         """
@@ -72,7 +80,6 @@ class ControladorApp:
 
         return self.comparador.comparar(resultado1, resultado2)
 
-
     def obter_recomendacao(self, mensagem_comparacao: str) -> str:
         """
         Gera uma recomendação com base na mensagem retornada pela função de comparação.
@@ -86,4 +93,3 @@ class ControladorApp:
         recomendador = RecomendadorModalidade()
         dados = {"mensagem_comparacao": mensagem_comparacao}
         return recomendador.recomendar(dados)
-        
