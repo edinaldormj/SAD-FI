@@ -5,6 +5,8 @@ from domain.simulador_sac_ipca import SimuladorSAC_IPCA
 from domain.comparador import ComparadorModalidades
 from infrastructure.data.tabela_ipca import TabelaIPCA
 from domain.recomendador import RecomendadorModalidade
+from infrastructure.data.exportador_csv import exportar_cronograma_csv
+from typing import Any
 
 class ControladorApp:
     """
@@ -93,3 +95,27 @@ class ControladorApp:
         recomendador = RecomendadorModalidade()
         dados = {"mensagem_comparacao": mensagem_comparacao}
         return recomendador.recomendar(dados)
+
+    def exportar_resultado(self, simulacao_resultado: Any, nome_base: str) -> str:
+        """
+        Exporta o resultado de uma simulação para CSV.
+
+        Parâmetros:
+            simulacao_resultado: objeto que deve possuir o método to_dataframe().
+            nome_base (str): Nome base do arquivo (sem extensão).
+
+        Retorno:
+            str: Caminho completo do arquivo CSV gerado.
+        """
+        if not hasattr(simulacao_resultado, "to_dataframe"):
+            raise TypeError("O objeto informado não possui o método to_dataframe().")
+
+        df = simulacao_resultado.to_dataframe()
+
+        if getattr(df, "empty", True):
+            raise ValueError("O DataFrame está vazio. Nada a exportar.")
+
+        caminho = exportar_cronograma_csv(df, nome_base)
+        print(f"✅ Arquivo CSV exportado para: {caminho}")
+        return caminho
+

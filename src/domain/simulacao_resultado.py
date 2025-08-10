@@ -1,3 +1,5 @@
+import pandas as pd
+
 class SimulacaoResultado:
     """
     Representa o resultado de uma simulação de financiamento.
@@ -40,3 +42,30 @@ class SimulacaoResultado:
             "total_pago": self.total_pago,
             "total_juros": self.total_juros
         }
+
+    def to_dataframe(self):
+        """
+        Converte o cronograma de parcelas em um DataFrame do Pandas.
+
+        Retorno:
+        pandas.DataFrame com colunas:
+            n_parcela, data, valor_parcela, amortizacao, juros, saldo_devedor
+        """
+        dados = []
+        for p in self.parcelas:
+            dados.append({
+                "n_parcela": getattr(p, "numero", None),
+                "data": getattr(p, "data", None),
+                "valor_parcela": getattr(p, "valor_total", None),
+                "amortizacao": getattr(p, "amortizacao", None),
+                "juros": getattr(p, "juros", None),
+                "saldo_devedor": getattr(p, "saldo_devedor", None)
+            })
+
+        df = pd.DataFrame(dados)
+
+        # Ordena por número da parcela se disponível
+        if "n_parcela" in df.columns and df["n_parcela"].notna().all():
+            df = df.sort_values("n_parcela").reset_index(drop=True)
+
+        return df
