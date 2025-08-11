@@ -40,7 +40,8 @@ class ControladorApp:
             valor_total=dados_entrada["valor_total"],
             entrada=dados_entrada["entrada"],
             prazo_anos=dados_entrada["prazo_anos"],
-            sistema=dados_entrada["sistema"]
+            sistema=dados_entrada["sistema"],
+            taxa_juros_anual=dados_entrada["taxa_juros_anual"],
         )
 
         if dados_entrada["sistema"] == "SAC":
