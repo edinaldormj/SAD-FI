@@ -1,0 +1,21 @@
+@startuml FluxoInterfaceSADFIsprint3
+title Fluxo da Interface – SAD-FI
+
+start
+
+:Preencher parâmetros do financiamento;
+:Validar campos e caminho IPCA;
+
+if (Entradas válidas?) then (Sim)
+  :Executar simulações SAC fixo e SAC+IPCA;
+  :Comparar modalidades;
+  :Gerar recomendação;
+  :Preparar dados para gráficos e exportação;
+  :Exibir resultados (resumo, gráfico, CSV);
+else (Não)
+  :Exibir mensagens de erro;
+endif
+
+stop
+@enduml
+

@@ -1,0 +1,17 @@
+[SAD-FI] Simulação
+──────────────────────────────────────────
+Valor do imóvel (R$): [______________]
+Entrada (R$):         [______________]
+Prazo: [   ] anos  (ou)  [   ] meses
+
+Sistema de amortização:
+  (•) SAC fixo     Taxa anual (% a.a.): [____]
+  ( ) SAC + IPCA   Taxa anual (% a.a.): [____]
+                   Arquivo IPCA (.csv): [Selecionar…] [⟲ validar]
+
+[ ] Gerar gráfico   [ ] Exportar CSV   Nome da simulação: [__________]
+
+[Simular]                           [Limpar]
+──────────────────────────────────────────
+Mensagens/avisos:
+- (exibir aqui erros de validação e avisos de IPCA)

@@ -1,0 +1,22 @@
+[SAD-FI] Resultados da Simulação
+──────────────────────────────────────────
+Resumo por modalidade
+ SAC fixo
+   - Custo total: R$ ________
+   - Total de juros: R$ ________
+   - Parcelas: ___
+
+ SAC + IPCA
+   - Custo total: R$ ________
+   - Total de juros: R$ ________
+   - Parcelas: ___
+   - Meses com IPCA negativo: __
+
+Comparação e recomendação
+ - Diferença: R$ ________ (___%)
+ - Interpretação: "Modalidade X é mais vantajosa" | "Empate"
+ - Recomendação: 💡 Recomendado: _________
+
+[ Gráfico: custo total por modalidade ]
+[ Exportar CSV ]  → caminho/arquivo
+[ Nova simulação ]

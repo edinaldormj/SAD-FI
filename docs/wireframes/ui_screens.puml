@@ -1,0 +1,40 @@
+@startuml ui_components
+
+title Esboço de Telas - SAD-FI (Sprint 3)
+
+skinparam rectangle {
+  BackgroundColor #F8F8F8
+  BorderColor black
+  RoundCorner 15
+}
+skinparam defaultFontName "Arial"
+
+rectangle "Tela Inicial" {
+  rectangle "Campo: Valor do imóvel" as campo_valor
+  rectangle "Campo: Entrada" as campo_entrada
+  rectangle "Campo: Prazo (anos)" as campo_prazo
+  rectangle "Campo: Sistema (SAC/SAC IPCA)" as campo_sistema
+  rectangle "Campo: Taxa de juros (anual)" as campo_taxa
+  rectangle "Botão: Simular" as botao_simular
+}
+
+rectangle "Tela de Resultados" {
+  rectangle "Texto: Recomendação" as rec_texto
+  rectangle "Tabela: Custo total e juros" as tabela_custos
+  rectangle "Gráfico: Evolução do saldo devedor" as grafico_saldo
+  rectangle "Gráfico: Comparação de modalidades" as grafico_modalidades
+  rectangle "Botão: Exportar CSV" as botao_csv
+}
+
+campo_valor -[hidden]-> campo_entrada
+campo_entrada -[hidden]-> campo_prazo
+campo_prazo -[hidden]-> campo_sistema
+campo_sistema -[hidden]-> campo_taxa
+campo_taxa -[hidden]-> botao_simular
+
+rec_texto -[hidden]-> tabela_custos
+tabela_custos -[hidden]-> grafico_saldo
+grafico_saldo -[hidden]-> grafico_modalidades
+grafico_modalidades -[hidden]-> botao_csv
+
+@enduml
