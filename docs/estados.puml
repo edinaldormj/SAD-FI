@@ -1,26 +1,34 @@
-@startuml 
-Title Diagrama de Estados SAD-FI
+@startuml estados_sad_fi
+title Diagrama de Estados – SAD-FI
 
-[*] --> EsperandoEntrada
+skinparam defaultFontName "Arial"
+skinparam state {
+  BackgroundColor #FDFDFD
+  BorderColor black
+  FontSize 12
+}
+skinparam ArrowColor Black
+skinparam Shadowing false
 
-EsperandoEntrada --> MensagemErro : entrada inválida
-EsperandoEntrada --> ConfigurandoSimulacao : entrada válida
+[*] --> EntradaDados : abrir app / nova simulação
 
-ConfigurandoSimulacao --> ExecutandoSimulacao
+state EntradaDados {
+  [*] --> AguardandoParametros
+  AguardandoParametros --> ProntoParaSimular : preencher todos os campos
+}
 
-ExecutandoSimulacao --> SimulacaoConcluida
+EntradaDados --> Simulando : clicar em "Simular"
 
-SimulacaoConcluida --> ExibirGrafico
-SimulacaoConcluida --> CompararModalidades
-SimulacaoConcluida --> MostrarRecomendacao
-SimulacaoConcluida --> VerResumo
+Simulando --> ExibindoResultado : simulação concluída
 
-ExibirGrafico --> EsperandoNovaAcao
-CompararModalidades --> EsperandoNovaAcao
-MostrarRecomendacao --> EsperandoNovaAcao
-VerResumo --> EsperandoNovaAcao
+state ExibindoResultado {
+  [*] --> ExibirResumo
+  ExibirResumo --> ExibirGrafico : clicar em "Ver gráfico"
+  ExibirResumo --> ExportarCSV : clicar em "Exportar CSV"
+  ExportarCSV --> ExibirResumo : exportação concluída
+  ExibirGrafico --> ExibirResumo : voltar
+}
 
-EsperandoNovaAcao --> EsperandoEntrada : nova simulação
-EsperandoNovaAcao --> [*] : encerrar
+ExibindoResultado --> EntradaDados : clicar em "Nova Simulação"
 
 @enduml

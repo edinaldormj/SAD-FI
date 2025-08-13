@@ -1,5 +1,3 @@
-import pandas as pd
-
 class SimulacaoResultado:
     """
     Representa o resultado de uma simulação de financiamento.
@@ -33,9 +31,6 @@ class SimulacaoResultado:
     def to_dict_resumo(self):
         """
         Retorna um dicionário com o resumo numérico da simulação.
-
-        Retorno:
-        dict: {'parcelas': int, 'total_pago': float, 'total_juros': float}
         """
         return {
             "parcelas": len(self.parcelas),
@@ -43,29 +38,93 @@ class SimulacaoResultado:
             "total_juros": self.total_juros
         }
 
+    # 🔽 NOVO: DataFrame pronto p/ exportação, incluindo colunas TR quando existirem
     def to_dataframe(self):
         """
-        Converte o cronograma de parcelas em um DataFrame do Pandas.
+        Converte o cronograma em um pandas.DataFrame.
+        Inclui colunas extras relacionadas à TR (saldo_anterior, correcao_tr_mes, saldo_corrigido)
+        caso estes atributos estejam presentes nas parcelas.
 
-        Retorno:
-        pandas.DataFrame com colunas:
-            n_parcela, data, valor_parcela, amortizacao, juros, saldo_devedor
+        Colunas base:
+          n_parcela; amortizacao; juros; valor_parcela; saldo_devedor
+
+        Colunas extras (opcionais):
+          saldo_anterior; correcao_tr_mes; saldo_corrigido
         """
-        dados = []
+        try:
+            import pandas as pd
+        except Exception as e:
+            raise RuntimeError("Pandas é necessário para to_dataframe().") from e
+
+        if not self.parcelas:
+            return pd.DataFrame()
+
+        # Detecta se há atributos extras (caso de TR ou indexadores semelhantes)
+        tem_saldo_anterior = any(hasattr(p, "saldo_anterior") for p in self.parcelas)
+        tem_correcao_tr = any(hasattr(p, "correcao_tr_mes") for p in self.parcelas)
+        tem_saldo_corrigido = any(hasattr(p, "saldo_corrigido") for p in self.parcelas)
+
+        linhas = []
         for p in self.parcelas:
-            dados.append({
-                "n_parcela": getattr(p, "numero", None),
-                "data": getattr(p, "data", None),
-                "valor_parcela": getattr(p, "valor_total", None),
-                "amortizacao": getattr(p, "amortizacao", None),
-                "juros": getattr(p, "juros", None),
-                "saldo_devedor": getattr(p, "saldo_devedor", None)
-            })
+            item = {
+                "n_parcela": p.numero,
+                "amortizacao": p.amortizacao,
+                "juros": p.juros,
+                "valor_parcela": p.valor_total,
+                "saldo_devedor": p.saldo_devedor,
+            }
+            if tem_saldo_anterior:
+                item["saldo_anterior"] = getattr(p, "saldo_anterior", None)
+            if tem_correcao_tr:
+                item["correcao_tr_mes"] = getattr(p, "correcao_tr_mes", None)
+            if tem_saldo_corrigido:
+                item["saldo_corrigido"] = getattr(p, "saldo_corrigido", None)
+            linhas.append(item)
 
-        df = pd.DataFrame(dados)
+        # Ordena colunas para legibilidade
+        colunas = ["n_parcela"]
+        if tem_saldo_anterior:
+            colunas += ["saldo_anterior"]
+        if tem_correcao_tr:
+            colunas += ["correcao_tr_mes"]
+        if tem_saldo_corrigido:
+            colunas += ["saldo_corrigido"]
+        colunas += ["amortizacao", "juros", "valor_parcela", "saldo_devedor"]
 
-        # Ordena por número da parcela se disponível
-        if "n_parcela" in df.columns and df["n_parcela"].notna().all():
-            df = df.sort_values("n_parcela").reset_index(drop=True)
-
+        df = pd.DataFrame(linhas, columns=colunas)
         return df
+
+    # 🔽 NOVO: resumo com correção do principal exposta
+    def resumo_financeiro(self) -> dict:
+        """
+        Retorna um dicionário com métricas de transparência:
+         - valor_financiado: saldo da primeira parcela antes do pagamento
+         - soma_amortizacoes
+         - correcao_tr_acumulada = soma_amortizacoes - valor_financiado
+         - total_juros
+         - total_pago
+        """
+        if not self.parcelas:
+            return {
+                "valor_financiado": 0.0,
+                "soma_amortizacoes": 0.0,
+                "correcao_tr_acumulada": 0.0,
+                "total_juros": 0.0,
+                "total_pago": 0.0,
+            }
+
+        valor_financiado = getattr(self.parcelas[0], "saldo_anterior", None)
+        if valor_financiado is None:
+            # fallback: nos simuladores atuais, saldo_devedor da 1ª parcela é o saldo anterior
+            valor_financiado = self.parcelas[0].saldo_devedor
+
+        soma_amortizacoes = sum(p.amortizacao for p in self.parcelas)
+        correcao_tr_acumulada = soma_amortizacoes - valor_financiado
+
+        return {
+            "valor_financiado": float(valor_financiado),
+            "soma_amortizacoes": float(soma_amortizacoes),
+            "correcao_tr_acumulada": float(correcao_tr_acumulada),
+            "total_juros": float(self.total_juros),
+            "total_pago": float(self.total_pago),
+        }

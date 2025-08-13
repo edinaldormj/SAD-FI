@@ -49,6 +49,11 @@ class ControladorApp:
                 financiamento,
                 dados_entrada["taxa_juros_anual"]
             )
+            # Parâmetros opcionais para TR (MVP como constante mensal)
+            usar_tr = bool(dados_entrada.get("usar_tr", False))
+            tr_mensal = dados_entrada.get("tr_mensal", None)
+            return simulador.simular(usar_tr=usar_tr, tr_mensal=tr_mensal)
+
         elif dados_entrada["sistema"] == "SAC_IPCA":
             # 📌 Garante que o caminho para o CSV do IPCA seja absoluto
             caminho_ipca = os.path.abspath(dados_entrada["caminho_ipca"])
@@ -62,6 +67,7 @@ class ControladorApp:
 
             # ▶️ Cria o simulador SAC+IPCA usando o financiamento e a tabela de índices
             simulador = SimuladorSAC_IPCA(financiamento, tabela_ipca)
+            
         else:
             raise ValueError("Sistema de amortização não suportado.")
 
