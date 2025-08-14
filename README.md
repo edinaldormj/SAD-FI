@@ -3,20 +3,21 @@
 Este é um projeto de MVP desenvolvido como trabalho final de pós-graduação em Ciência de Dados e Inteligência Artificial.  
 O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparação de modalidades de financiamento imobiliário.
 
-## 🎯 Objetivos
-
-- Simular financiamentos com os sistemas SAC e SAC+IPCA
-- Comparar modalidades com base em custo total e perfil do usuário
-- Visualizar a evolução das parcelas e do saldo devedor
-- Avaliar o impacto da antecipação de parcelas no financiamento
-
-## Novidades da Sprint 2
+## ✨ Novidades da Sprint 2
 - **SAC fixo com TR opcional**: parâmetros `usar_tr` e `tr_mensal` controlam a aplicação da TR.
 - **SAC + IPCA com deflação**: aceitação de índices negativos, com ajuste no último mês para quitar saldo.
 - **Comparador e recomendador** integrados ao `ControladorApp`.
 - **Exportação CSV** via `SimulacaoResultado.to_dataframe()` e função `exportar_cronograma_csv(...)`.
 - Diagramas UML revisados para refletir as mudanças
 
+---
+
+## 🎯 Objetivos
+
+- Simular financiamentos com os sistemas SAC e SAC+IPCA
+- Comparar modalidades com base em custo total e perfil do usuário
+- Visualizar a evolução das parcelas e do saldo devedor
+- Avaliar o impacto da antecipação de parcelas no financiamento
 
 ## 🧰 Tecnologias e Bibliotecas Utilizadas
 
@@ -52,9 +53,8 @@ Para manter rastreabilidade entre código e documentação, os principais diagra
 
 ---
 
-## 🚀 Como executar
 
-### ▶️ Como Executar o Projeto
+## ▶️ Como Executar o Projeto
 
 1. Clone este repositório:
    ```bash
@@ -142,7 +142,7 @@ Projeto acadêmico sem fins comerciais.
 | 27 | Revisar diagramas de estados e sequência                      | 🟩 Documentação   | ✅     | Sprint 2  |
 | 28 | Atualizar README com entregas da Sprint 2                      | 🟩 Documentação   | ✅     | Sprint 2  |
 
-
+---
 
 ## 📚 Histórico de Comandos Git
 
