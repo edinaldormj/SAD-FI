@@ -1,34 +1,40 @@
-@startuml ArquiteturaCamadas
 
-title Arquitetura em Camadas – SAD-FI
+@startuml SADFI_Camadas_Sprint2_Simples_Clean
 
-skinparam rectangle {
-  BackgroundColor #F0F0F0
-  BorderColor black
-  RoundCorner 15
+title SAD-FI – Visão em Camadas (Sprint 2) — Simples e Limpa
+
+skinparam packageStyle rectangle
+skinparam defaultFontName Courier
+
+package "Presentation" as Presentation {
+  note as n1
+  Entrada de dados, visualização e interação do usuário
+  (Wireframes, Notebook).
+  end note
 }
-skinparam defaultFontName "Arial"
-skinparam defaultTextAlignment center
-skinparam linetype ortho
 
-actor UsuarioFinal as Usuario
+package "Application" as Application {
+  note as n2
+  Orquestra o fluxo de casos de uso:
+  simulação, comparação, recomendação e exportação.
+  end note
+}
 
-rectangle "**Presentation Layer**\n----\nRecebe entradas do usuário e exibe resultados" as Presentation
-rectangle "**Application Layer**\n----\nOrquestra o fluxo entre as camadas" as Application
-rectangle "**Domain Layer**\n----\nContém as regras de negócio e entidades centrais" as Domain
-rectangle "**Infrastructure Layer**\n----\nFornece acesso a dados e serviços externos" as Infrastructure
+package "Domain" as Domain {
+  note as n3
+  Regras de negócio e entidades do financiamento.
+  end note
+}
 
-Usuario --> Presentation
-Presentation --> Application
-Application --> Domain
-Domain --> Infrastructure
+package "Infrastructure / Data" as Infra {
+  note as n4
+  Acesso a dados, leitura/gravação e utilidades externas.
+  end note
+}
+
+' Encadeamento único entre camadas
+Presentation --> Application : Comandos do usuário / Exibição de resultados
+Application --> Domain : Execução das regras de negócio
+Domain --> Infra : Consulta e armazenamento de dados
 
 @enduml
-
-
-
-
-
-
-
-

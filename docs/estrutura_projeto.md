@@ -5,6 +5,40 @@ O projeto está organizado segundo os princípios de **arquitetura em camadas** 
 
 ---
 
+## Estrutura Atual
+
+SAD-FI/
+├── dados/
+│   
+├── docs/
+│   ├── out/
+│   │   └── docs/
+│   │       ├── camadas/
+│   │       ├── classes/
+│   │       ├── estados/
+│   │       ├── sequencia/
+│   │       └── wireframes/
+│   │           ├── ui_flow/
+│   │           └── ui_screens/
+│   │               
+│   └── wireframes/
+│      
+├── notebooks/
+│     
+├── resultados/
+│   └── graficos/
+│   
+├── src/
+│   ├── application/
+│   │
+│   ├── domain/
+│   │
+│   ├── infrastructure/
+│   │   └── data/
+│   └── presentation/
+│
+└── tests/
+
 ## `src/` – Código-fonte principal
 
 | Diretório                         | Camada               | Descrição                                                                 |

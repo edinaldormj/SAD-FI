@@ -1,5 +1,6 @@
+
 @startuml
-title Diagrama de Classes – SAD-FI (Sprint 2 atualizado)
+title SAD-FI – Diagrama de Classes (Sprint 2 revisado • Parcela alinhada)
 
 skinparam defaultFontName "Arial"
 skinparam classAttributeIconSize 0
@@ -21,7 +22,16 @@ class Parcela {
   + juros: float
   + valor_total: float
   + saldo_devedor: float
+  + __eq__(other): bool
 }
+note right of Parcela
+  Convenção (código atual):
+   • saldo_devedor = saldo APÓS o pagamento da parcela.
+   • Para transparência quando TR/IPCA:
+       - saldo_anterior {optional}
+       - saldo_corrigido {optional}
+       - correcao_tr_mes {optional}
+end note
 
 class SimulacaoResultado {
   + parcelas: List<Parcela>
@@ -29,18 +39,15 @@ class SimulacaoResultado {
   + total_juros: float
   + to_dict_resumo(): dict
   + to_dataframe(): DataFrame
+  + resumo_financeiro(): dict
+  + __repr__(): str
 }
 
 class SimuladorSAC {
   - financiamento: Financiamento
   - taxa_juros_anual: float
-  + simular(): SimulacaoResultado
-}
-
-class TabelaIPCA {
-  - caminho_csv: str
-  - dados: DataFrame
-  + get_ipca(mes: int): float
+  - _MARGEM_TOLERANCIA: float
+  + simular(usar_tr: bool=False, tr_mensal: float|None=None): SimulacaoResultado
 }
 
 class SimuladorSAC_IPCA {
@@ -60,32 +67,33 @@ class RecomendadorModalidade {
 
 class ControladorApp {
   + executar_simulacao(dados_entrada: dict): SimulacaoResultado
-  + comparar_modalidades(r1: SimulacaoResultado, r2: SimulacaoResultado): str
-  + obter_recomendacao(msg_comparacao: str): str
-  + exportar_resultado(resultado: SimulacaoResultado, nome_base: str): str
+  + comparar_modalidades(r1, r2): str
+  + obter_recomendacao(msg: str): str
+  + exportar_resultado(res: any, nome_base: str): str
 }
 
-' Módulo/função de infra (representado como class estática)
-class ExportadorCSV <<utility>> {
-  + exportar_cronograma_csv(df: DataFrame, nome_base: str): str
+class TabelaIPCA {
+  + get_ipca(mes: int): float
 }
 
-' ===================== RELACIONAMENTOS =====================
-Financiamento "1" o-- "*" Parcela : gera\n(indiretamente via simuladores)
-SimuladorSAC --> Financiamento
-SimuladorSAC_IPCA --> Financiamento
-SimuladorSAC_IPCA --> TabelaIPCA
+class exportador_csv <<function>> {
+  {static} exportar_cronograma_csv(df: DataFrame, nome_base: str): str
+}
+
+SimulacaoResultado "1" o-- "*" Parcela : agrega
+
+SimuladorSAC --> Financiamento : usa
+SimuladorSAC_IPCA --> Financiamento : usa
+
 SimuladorSAC --> SimulacaoResultado
 SimuladorSAC_IPCA --> SimulacaoResultado
+SimuladorSAC_IPCA --> TabelaIPCA : usa
 
-ComparadorModalidades --> SimulacaoResultado
-RecomendadorModalidade --> ComparadorModalidades : consome saída textual
-
+ControladorApp --> Financiamento : cria/usa
 ControladorApp --> SimuladorSAC
 ControladorApp --> SimuladorSAC_IPCA
 ControladorApp --> ComparadorModalidades
 ControladorApp --> RecomendadorModalidade
-ControladorApp --> ExportadorCSV
+ControladorApp --> exportador_csv : exportar_cronograma_csv(...)
 
 @enduml
-

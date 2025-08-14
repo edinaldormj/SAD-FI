@@ -1,14 +1,23 @@
 class Parcela:
+  
     """
     Representa uma única parcela de um financiamento.
 
     Cada parcela contém:
-    - número da parcela
-    - valor da amortização (parte que reduz a dívida)
-    - valor dos juros
-    - valor total da parcela (amortização + juros)
-    - saldo devedor antes do pagamento dessa parcela
+    - numero: número da parcela (ex.: 1, 2, 3…)
+    - amortizacao: valor da amortização (parte que reduz a dívida)
+    - juros: valor dos juros da parcela
+    - valor_total: soma de amortização e juros
+    - saldo_devedor: saldo remanescente após o pagamento da parcela
+
+    Convenção (implementação atual dos simuladores):
+    - `saldo_devedor` refere-se ao saldo remanescente após o pagamento da parcela, em qualquer modalidade.
+    - Para transparência (TR/IPCA), os simuladores podem anexar dinamicamente:
+        * saldo_anterior  — saldo antes de correções e pagamento
+        * saldo_corrigido — saldo após correção TR/IPCA, antes da amortização
+        * correcao_tr_mes — delta aplicado pela TR no mês
     """
+
 
     def __init__(self, numero, amortizacao, juros, valor_total, saldo_devedor):
         """

@@ -1,34 +1,59 @@
-@startuml estados_sad_fi
-title Diagrama de Estados – SAD-FI
 
-skinparam defaultFontName "Arial"
+@startuml SADFI_Estados_Sprint2_Linear
+
+title SAD-FI – Diagrama de Estados (Sprint 2, fluxo linear)
+
+skinparam defaultFontName Arial
+skinparam shadowing false
 skinparam state {
-  BackgroundColor #FDFDFD
-  BorderColor black
+  RoundCorner 18
   FontSize 12
-}
-skinparam ArrowColor Black
-skinparam Shadowing false
-
-[*] --> EntradaDados : abrir app / nova simulação
-
-state EntradaDados {
-  [*] --> AguardandoParametros
-  AguardandoParametros --> ProntoParaSimular : preencher todos os campos
+  BackgroundColor #FFFFFF
+  BorderColor #333333
 }
 
-EntradaDados --> Simulando : clicar em "Simular"
+[*] --> EntradaDeDados : Início
 
-Simulando --> ExibindoResultado : simulação concluída
-
-state ExibindoResultado {
-  [*] --> ExibirResumo
-  ExibirResumo --> ExibirGrafico : clicar em "Ver gráfico"
-  ExibirResumo --> ExportarCSV : clicar em "Exportar CSV"
-  ExportarCSV --> ExibirResumo : exportação concluída
-  ExibirGrafico --> ExibirResumo : voltar
+state EntradaDeDados {
+  note right
+    Usuário informa dados mínimos:
+    • Sistema (SAC ou SAC_IPCA)
+    • Valor do imóvel, entrada, prazo
+    • Taxa anual (SAC) ou caminho IPCA (SAC_IPCA)
+  end note
 }
 
-ExibindoResultado --> EntradaDados : clicar em "Nova Simulação"
+EntradaDeDados --> ValidarEntradas : Simular
+
+state ValidarEntradas
+
+ValidarEntradas --> EscolherModalidade : dados válidos
+ValidarEntradas --> ErroDeValidacao : dados inválidos
+
+ErroDeValidacao --> EntradaDeDados : Corrigir e tentar novamente
+
+state EscolherModalidade {
+  SAC : Modalidade SAC
+  SAC_IPCA : Modalidade SAC_IPCA
+}
+
+EscolherModalidade --> Simular : SAC ou SAC_IPCA
+
+state Simular {
+  note right
+    Calcula cronograma conforme a modalidade escolhida
+  end note
+}
+
+Simular --> Resultado : Exibir resultados
+
+state Resultado {
+  Resumo : Ver resumo
+  Grafico : Ver gráfico
+  ExportarCSV : Exportar CSV
+}
+
+Resultado --> EntradaDeDados : Nova simulação
+Resultado --> [*] : Fim
 
 @enduml

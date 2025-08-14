@@ -1,54 +1,79 @@
-@startuml Sequencia_SADFI_Sprint2
-title Diagrama de Sequência – SAD-FI (Sprint 2)
 
-skinparam defaultFontName "Arial"
+@startuml SADFI_Sequencia_Sprint2_Rev_Fix
+
+title SAD-FI – Diagrama de Sequência (Sprint 2, revisão mínima – corrigido)
+
+skinparam defaultFontName Arial
 skinparam shadowing false
-autonumber
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #333333
+  LifeLineBackgroundColor #FFFFFF
+  ParticipantBorderColor #333333
+  ParticipantBackgroundColor #FFFFFF
+  BoxBorderColor #999999
+  BoxBackgroundColor #F9F9F9
+}
 
-actor Usuario
-participant "UI / Notebook\n(Presentation)" as UI
-participant "ControladorApp\n(Application)" as Ctrl
-participant "SimuladorSAC\n(Domain)" as SimSAC
-participant "SimuladorSAC_IPCA\n(Domain)" as SimIPCA
-participant "TabelaIPCA\n(Infrastructure/Data)" as Tabela
-participant "SimulacaoResultado\n(Domain)" as Resultado
-participant "ComparadorModalidades\n(Domain)" as Comp
-participant "RecomendadorModalidade\n(Domain)" as Rec
-participant "ExportadorCSV\n(Infrastructure)" as CSV
+actor UI as UI
+participant "ControladorApp" as Ctrl
+participant "Financiamento" as Fin
+participant "SimuladorSAC" as SimSAC
+participant "SimuladorSAC_IPCA" as SimIPCA
+participant "TabelaIPCA" as TabIPCA
+participant "ComparadorModalidades" as Comp
+participant "RecomendadorModalidade" as Rec
+participant "exportador_csv (função)" as ExpCSV
 
-== Entrada & Validação ==
-Usuario -> UI : Preenche parâmetros (valor, entrada, prazo, sistema, taxa, CSV IPCA)
-UI -> Ctrl : executar_simulacao(dados_entrada)
+== Entrada e Simulação ==
+UI -> Ctrl: executar_simulacao(dados_entrada)
+activate Ctrl
+Ctrl -> Fin: new(valor_total, entrada, prazo_anos, sistema, taxa_juros_anual)
+activate Fin
+Fin --> Ctrl: instancia
+deactivate Fin
 
 alt sistema == "SAC"
-  Ctrl -> SimSAC : simular(financiamento, taxa_base_mensal)
-  SimSAC -> Resultado : retorna SimulacaoResultado
-  Ctrl <-- Resultado : resultado_sac
+  Ctrl -> SimSAC: simular(usar_tr, tr_mensal)\n→ SimulacaoResultado
+  activate SimSAC
+  SimSAC --> Ctrl: resultado_sac
+  deactivate SimSAC
 else sistema == "SAC_IPCA"
-  Ctrl -> Tabela : carregar/validar caminho_ipca
-  Ctrl -> SimIPCA : simular(financiamento, tabela_ipca)\n(IPCA ±, juros sobre saldo corrigido,\núltima parcela ajustada)
-  SimIPCA -> Resultado : retorna SimulacaoResultado
-  Ctrl <-- Resultado : resultado_ipca
+  Ctrl -> TabIPCA: new(caminho_ipca)  ' valida arquivo
+  activate TabIPCA
+  TabIPCA --> Ctrl: instancia
+  deactivate TabIPCA
+
+  Ctrl -> SimIPCA: simular()\n→ SimulacaoResultado
+  activate SimIPCA
+  note over SimIPCA
+    Para cada mês:
+    ipca_mensal = TabIPCA.get_ipca(m)
+    corrige saldo → aplica juros → amortiza
+  end note
+  SimIPCA --> Ctrl: resultado_ipca
+  deactivate SimIPCA
 end
 
-== Comparação (opcional) ==
-UI -> Ctrl : comparar_modalidades(r1, r2)
-Ctrl -> Comp : comparar(r1, r2)
-Comp --> Ctrl : mensagem_comparacao
+deactivate Ctrl
 
-== Recomendação ==
-Ctrl -> Rec : recomendar({ mensagem_comparacao })
-Rec --> Ctrl : "Recomendado: ..."/empate
+== Comparação e Recomendação ==
+Ctrl -> Comp: comparar(resultado1, resultado2)
+activate Comp
+Comp --> Ctrl: mensagem_comparacao
+deactivate Comp
 
-== Visualização ==
-Ctrl -> UI : {resumos, mensagem, recomendação, dados p/ gráfico}
+Ctrl -> Rec: recomendar({mensagem_comparacao})
+activate Rec
+Rec --> Ctrl: "💡 Recomendado: ..."
+deactivate Rec
 
 == Exportação (opcional) ==
-UI -> Ctrl : exportar_resultado(simulacao_resultado, nome_base)
-Ctrl -> Resultado : to_dataframe()
-Resultado --> Ctrl : DataFrame
-Ctrl -> CSV : exportar_cronograma_csv(df, nome_base)
-CSV --> Ctrl : caminho_arquivo
-Ctrl -> UI : caminho_arquivo (resultados/....csv)
+opt Exportação solicitada pelo usuário
+  Ctrl -> Ctrl: resultado.to_dataframe()
+  Ctrl -> ExpCSV: exportar_cronograma_csv(df, nome_base)\n→ caminho.csv
+end
+
+UI <-- Ctrl: resumo, comparação, recomendação, [caminho.csv]
 
 @enduml
