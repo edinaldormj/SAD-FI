@@ -10,6 +10,14 @@ O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparaç�
 - Visualizar a evolução das parcelas e do saldo devedor
 - Avaliar o impacto da antecipação de parcelas no financiamento
 
+## Novidades da Sprint 2
+- **SAC fixo com TR opcional**: parâmetros `usar_tr` e `tr_mensal` controlam a aplicação da TR.
+- **SAC + IPCA com deflação**: aceitação de índices negativos, com ajuste no último mês para quitar saldo.
+- **Comparador e recomendador** integrados ao `ControladorApp`.
+- **Exportação CSV** via `SimulacaoResultado.to_dataframe()` e função `exportar_cronograma_csv(...)`.
+- Diagramas UML revisados para refletir as mudanças
+
+
 ## 🧰 Tecnologias e Bibliotecas Utilizadas
 
 - Python 3.x
@@ -25,23 +33,28 @@ A estrutura completa e detalhada do projeto, com explicações de cada pasta e c
 
 ## 🧱 Arquitetura em Camadas
 
-O sistema segue uma arquitetura em camadas com separação entre apresentação, aplicação, domínio e infraestrutura.
+O projeto segue uma **arquitetura em camadas**:
 
-![Arquitetura SAD-FI](docs/out/docs/camadas/ArquiteturaCamadas.png)
+1. **Presentation** – Interface com o usuário (wireframes/texto e notebook de visualização).
+2. **Application** – `ControladorApp`, responsável por orquestrar as simulações, comparações, recomendações e exportações.
+3. **Domain** – Regras de negócio e entidades (`Financiamento`, `Parcela`, `SimulacaoResultado`, simuladores SAC e SAC_IPCA, comparador, recomendador).
+4. **Infrastructure / Data** – Acesso a dados (`TabelaIPCA`, `leitor_csv`, `salvar_ipca_tratado`) e função `exportar_cronograma_csv`.
 
-> A imagem acima representa a arquitetura conceitual do sistema SAD-FI e é gerada a partir de `docs/camadas.puml` com o PlantUML.
+## Diagramas (docs/out/)
+Para manter rastreabilidade entre código e documentação, os principais diagramas estão disponíveis no diretório `docs/out/`:
 
-## 🧩 Diagrama de Classes
-
-![Diagrama de Classes](docs/out/docs/classes/classes.png)
-
-> A imagem acima é gerada a partir do arquivo `docs/classes.puml` com o auxílio do PlantUML.
+| Tipo        | Arquivo                                                                                  | Descrição                                                                 |
+|-------------|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| Camadas     | [`Arquitetura Conceitual`](docs/out/docs/camadas/SADFI_Camadas_Sprint2_Simples_Clean.png) | Visão simples das camadas e suas relações.                                 |
+| Classes     | [`Diagrama de Classes`](docs/out/docs/classes/classes_Sprint2_rev_parcela.png) | Classes atualizadas com TR opcional, vínculos corretos e atributos extras. |
+| Estados     | [`Diagrama de Estados`](docs/out/docs/estados/SADFI_Estados_Sprint2_Linear.png)             | Fluxo linear e claro, com início e fim explícitos.                         |
+| Sequência   | [`Diagrama de Sequência`](docs/out/docs/sequencia/SADFI_Sequencia_Sprint2_Rev_Fix.png)     | Fluxo de mensagens, com parâmetros de TR explícitos e exportação opcional. |
 
 ---
 
 ## 🚀 Como executar
 
-## ▶️ Como Executar o Projeto
+### ▶️ Como Executar o Projeto
 
 1. Clone este repositório:
    ```bash
@@ -80,6 +93,8 @@ O sistema segue uma arquitetura em camadas com separação entre apresentação,
 
 Os testes são organizados na pasta tests/, com scripts dedicados para cada componente do sistema. O desenvolvimento segue abordagem TDD (Test-Driven Development), utilizando scripts simples com assert e print para facilitar a verificação manual. Futuramente, poderá ser adotado pytest para maior robustez e automação.
 
+---
+
 ## 📄 Licença
 
 Projeto acadêmico sem fins comerciais.
@@ -99,7 +114,35 @@ Projeto acadêmico sem fins comerciais.
 | 7  | Gerar notebook de visualização da simulação SAC             | 🟨 Visualização   | ✅     | Sprint 1  |
 | 8  | Refinar visualizações com foco em clareza e escala          | 🟨 Visualização   | ✅     | Sprint 1  |
 | 9  | Versionar scripts, notebooks e arquivos auxiliares           | 🟩 Documentação   | ✅     | Sprint 1  |
-| 10 | Criar planejamento e backlog de funcionalidades futuras      | 🟩 Documentação   | 🔲     | Sprint 1  |
+| 10 | Criar planejamento e backlog de funcionalidades futuras      | 🟩 Documentação   |   ✅   | Sprint 1  |
+
+
+---
+
+## 🗂️ Sprint 2 – Resumo das Issues
+
+| #  | Título da Issue                                              | Etiqueta         | Status | Milestone |
+|----|--------------------------------------------------------------|------------------|--------|-----------|
+| 11 | Implementar Simulador SAC com IPCA+                          | 🟦 Técnica        | ✅     | Sprint 2  |
+| 12 | Implementar TR opcional no Simulador SAC                     | 🟦 Técnica        | ✅     | Sprint 2  |
+| 13 | Criar função de comparação entre SAC fixo e SAC IPCA+        | 🟦 Técnica        | ✅     | Sprint 2  |
+| 14 | Calcular e exibir custo total de cada modalidade             | 🟨 Visualização   | ✅     | Sprint 2  |
+| 15 | Implementar regra simples de recomendação                    | 🟨 Visualização   | ✅     | Sprint 2  |
+| 16 | Escrever testes para recomendação automática                 | 🟪 Testes         | ✅     | Sprint 2  |
+| 17 | Escrever testes para função de exportação CSV                | 🟪 Testes         | ✅     | Sprint 2  |
+| 18 | Escrever testes para ComparadorModalidades                   | 🟪 Testes         | ✅     | Sprint 2  |
+| 19 | Escrever testes para SimuladorSAC_IPCA                        | 🟪 Testes         | ✅     | Sprint 2  |
+| 20 | Escrever testes para SimuladorSAC com TR opcional             | 🟪 Testes         | ✅     | Sprint 2  |
+| 21 | Escrever testes para TabelaIPCA                              | 🟪 Testes         | ✅     | Sprint 2  |
+| 22 | Exportar cronograma da simulação em CSV                       | 🟦 Técnica        | ✅     | Sprint 2  |
+| 23 | Coletar e validar dados históricos do IPCA                    | 🟩 Documentação   | ✅     | Sprint 2  |
+| 24 | Criar esboço de interface gráfica para usuários leigos        | 🟩 Documentação   | ✅     | Sprint 2  |
+| 25 | Documentar mudanças e extensões realizadas na Sprint 2        | 🟩 Documentação   | ✅     | Sprint 2  |
+| 26 | Ajustar diagrama de classes para refletir TR e vínculos       | 🟩 Documentação   | ✅     | Sprint 2  |
+| 27 | Revisar diagramas de estados e sequência                      | 🟩 Documentação   | ✅     | Sprint 2  |
+| 28 | Atualizar README com entregas da Sprint 2                      | 🟩 Documentação   | ✅     | Sprint 2  |
+
+
 
 ## 📚 Histórico de Comandos Git
 

@@ -8,36 +8,34 @@ O projeto está organizado segundo os princípios de **arquitetura em camadas** 
 ## Estrutura Atual
 
 SAD-FI/
-├── dados/
-│   
-├── docs/
-│   ├── out/
-│   │   └── docs/
-│   │       ├── camadas/
-│   │       ├── classes/
-│   │       ├── estados/
-│   │       ├── sequencia/
-│   │       └── wireframes/
-│   │           ├── ui_flow/
-│   │           └── ui_screens/
-│   │               
-│   └── wireframes/
-│      
-├── notebooks/
-│     
-├── resultados/
-│   └── graficos/
-│   
-├── src/
-│   ├── application/
-│   │
-│   ├── domain/
-│   │
-│   ├── infrastructure/
-│   │   └── data/
-│   └── presentation/
+├── dados/                      # Dados brutos ou processados
 │
-└── tests/
+├── docs/                      # Documentação do projeto
+│   ├── out/                   # Saída gerada automaticamente
+│   │   └── docs/
+│   │       ├── camadas/       # Diagramas de camadas
+│   │       ├── classes/       # Diagramas de classes
+│   │       ├── estados/       # Máquinas de estado
+│   │       ├── sequencia/     # Diagramas de sequência
+│   │       └── wireframes/    # Protótipos visuais
+│   │           ├── ui_flow/       # Fluxo de telas
+│   │           └── ui_screens/    # Telas da interface
+│   │
+│   └── wireframes/            # Protótipos manuais ou iniciais
+│
+├── notebooks/                 # Jupyter Notebooks para análises
+│
+├── resultados/                # Resultados das análises
+│   └── graficos/              # Gráficos gerados
+│
+├── src/                       # Código-fonte principal
+│   ├── application/           # Lógica de aplicação
+│   ├── domain/                # Regras de negócio
+│   ├── infrastructure/        # Integrações externas
+│   │   └── data/              # Acesso a dados
+│   └── presentation/          # Interface com o usuário
+│
+└── tests/                     # Testes automatizados
 
 ## `src/` – Código-fonte principal
 
