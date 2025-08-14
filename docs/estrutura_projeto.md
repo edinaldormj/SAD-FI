@@ -7,6 +7,7 @@ O projeto está organizado segundo os princípios de **arquitetura em camadas** 
 
 ## Estrutura Atual
 
+```plaintext
 SAD-FI/
 ├── dados/                      # Dados brutos ou processados
 │
@@ -36,6 +37,8 @@ SAD-FI/
 │   └── presentation/          # Interface com o usuário
 │
 └── tests/                     # Testes automatizados
+```
+
 
 ## `src/` – Código-fonte principal
 
