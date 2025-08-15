@@ -26,7 +26,8 @@ def testar_recomendacao_final():
         "entrada": 50000,
         "prazo_anos": 5,
         "sistema": "SAC_IPCA",
-        "caminho_ipca": "dados/ipca_fixo.csv"
+        "caminho_ipca": "dados/ipca_fixo.csv",
+        "taxa_juros_anual": 0.0617  # ~0,5% a.m. equivalente; use 0.12 se quiser 12% a.a.
     }
 
     app = ControladorApp()
