@@ -28,12 +28,12 @@ def testar_ipca_fixo_equivalente_juros_fixo():
     ipca_mensal_percentual = 0.50  # 0,50% ao mês
 
     # Cria financiamento comum
-    financiamento = Financiamento(valor_total=300000, entrada=50000, prazo_anos=prazo_anos, sistema="SAC")
+    financiamento = Financiamento(valor_total=300000, entrada=50000, prazo_anos=prazo_anos, sistema="SAC", taxa_juros_anual=0.06)
 
     # Simulador com taxa fixa anual equivalente a 0,50% ao mês (~6,17% a.a.)
     taxa_anual_equivalente = (1 + 0.005) ** 12 - 1
     sac_fixo = SimuladorSAC(financiamento, taxa_anual_equivalente)
-    resultado_fixo = sac_fixo.simular()
+    resultado_fixo = sac_fixo.simular(usar_tr=False, tr_mensal=0.005)
 
     # Simulador com IPCA fixo de 0,50%
     tabela_ipca_df = criar_tabela_ipca_fixa(ipca_mensal_percentual, meses)

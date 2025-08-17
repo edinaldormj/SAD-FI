@@ -74,12 +74,24 @@ def testar_tr_positiva_transparencia():
     imprimir_resumo(r_com_tr, f"SAC com TR={tr_mensal*100:.3f}% a.m.", correcao_total)
 
     # Validações
+    # 1) Custo total e juros devem aumentar com TR positiva
     assert r_com_tr.total_pago > r_sem_tr.total_pago, "Custo total deveria ser maior com TR positiva"
     assert r_com_tr.total_juros > r_sem_tr.total_juros, "Juros totais deveriam ser maiores com TR positiva"
-    assert r_com_tr.parcelas[-1].saldo_devedor > 0, "Com TR positiva, saldo final não deve ser zero"
-    # Saldo final deve estar próximo do esperado (tolerância maior por acumulação)
-    assert abs(r_com_tr.parcelas[-1].saldo_devedor - saldo) < 1.0, \
-        f"Saldo final inesperado: {r_com_tr.parcelas[-1].saldo_devedor} vs esperado {saldo}"
+
+    # 2) Saldo final deve ser ~0 (há quitação no último mês no SAC+TR)
+    assert abs(r_com_tr.parcelas[-1].saldo_devedor - 0.0) < 1e-6, "Saldo final deve ser zero com quitação"
+    
+    # 3) Verificar a regra de quitação: amortização da última parcela ≈ saldo_corrigido
+    p_ult = r_com_tr.parcelas[-1]
+    # Como você salva os campos de transparência nas parcelas:
+    # saldo_anterior -> saldo antes da TR; saldo_corrigido -> saldo após TR no mês
+    assert hasattr(p_ult, "saldo_corrigido")
+    assert abs(p_ult.amortizacao - p_ult.saldo_corrigido) < 1e-6, \
+        "No último mês com TR, a amortização deve quitar o saldo corrigido"
+
+    # 4) Conferir a métrica de transparência no resultado
+    rf = r_com_tr.resumo_financeiro()  # usa soma_amortizacoes - valor_financiado
+    assert rf["correcao_tr_acumulada"] > 0.0, "Deveria haver correção acumulada com TR positiva"
 
 if __name__ == "__main__":
     testar_tr_zero_equivalente()

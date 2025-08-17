@@ -15,10 +15,11 @@ print("🔧 Iniciando testes do SimuladorSAC_IPCA")
 
 # 🔢 Dados simulados
 financiamento = Financiamento(
-    valor_total=100000.00,
-    entrada=20000.00,
+    valor_total=100_000.00,
+    entrada=20_000.00,
     prazo_anos=1,        # 12 meses
-    sistema='SAC-IPCA'
+    sistema='SAC-IPCA', 
+    taxa_juros_anual = 0.0617 
 )
 
 # Usa o mesmo ipca.csv usado no sistema
