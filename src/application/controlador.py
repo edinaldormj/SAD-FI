@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 import os
+import sys
 import logging                               # ALTERAÇÃO: usar logging em vez de print
 from typing import Any, Optional             # ALTERAÇÃO: tipagens úteis
+from typing import Dict, List, Tuple, Optional
+
 
 from domain.financiamento import Financiamento
 from domain.simulador_sac import SimuladorSAC
 from domain.simulador_sac_ipca import SimuladorSAC_IPCA
 from domain.comparador import ComparadorModalidades
 from infrastructure.data.tabela_ipca import TabelaIPCA
+from infrastructure.data.leitor_bancos import carregar_bancos_csv #NOVO Sprint 3
+# from infrastructure.data.coletor_bacen import coletar_ipca_433  # novo (quando integrar)
+# from infrastructure.data.coletor_bacen import obter_ipca_df, df_para_tabela_ipca # novo (quando integrar)
+# from application.comparador import comparar_varios, recomendar # novo (quando integrar)
 from domain.recomendador import RecomendadorModalidade
 from infrastructure.data.exportador_csv import exportar_cronograma_csv
 from domain.simulacao_resultado import SimulacaoResultado   # ALTERAÇÃO: tipagem de retorno
@@ -145,3 +154,163 @@ class ControladorApp:
         caminho = exportar_cronograma_csv(df, nome_base)
         logger.info("Arquivo CSV exportado para: %s", caminho)   # ALTERAÇÃO: logging no lugar de print
         return caminho
+    
+
+    def _carregar_tabela_ipca(self, fonte_ipca: dict | None, exige_ipca: bool):
+        """
+        Helper interno para resolver e carregar a fonte do IPCA.
+
+        Parâmetros:
+        fonte_ipca: dict | None
+            - CSV local: {"caminho_ipca": "dados/ipca.csv"}
+            - BACEN 433: {"usar_bacen": True, "meses": 24}  (pendente até existir TabelaIPCA.from_dataframe)
+        exige_ipca: bool
+            True se há pelo menos um banco SAC_IPCA a ser simulado. Evita
+            carregar IPCA quando todos os bancos são SAC fixo.
+
+        Retorno:
+        TabelaIPCA | None
+            Instância pronta quando necessário; None quando não exigido.
+
+        Erros:
+        KeyError, ValueError: quando a fonte é obrigatória/ inválida.
+        FileNotFoundError: quando caminho_csv não existe (propagado do construtor).
+        NotImplementedError: caminho BACEN ainda não integrado (até existir from_dataframe).
+        """
+        # Se nenhum banco exige IPCA, não há o que carregar
+        if not exige_ipca:
+            logger.info("Nenhum banco SAC_IPCA na lista. IPCA não será carregado.")
+            return None
+
+        # Fonte do IPCA é obrigatória se existe SAC_IPCA
+        if not fonte_ipca:
+            raise KeyError(
+                "Fonte do IPCA não informada para bancos SAC_IPCA. "
+                "Use {'caminho_ipca': '...'} (CSV) ou {'usar_bacen': True, 'meses': N} (BACEN)."
+            )
+
+        # CSV local: mantém o contrato atual (TabelaIPCA lê CSV tratado e armazena %; get_ipca retorna fração)
+        if "caminho_ipca" in fonte_ipca:
+            caminho = str(fonte_ipca["caminho_ipca"]).strip()
+            logger.info("IPCA: carregando a partir de CSV local: %s", caminho)
+            tabela = TabelaIPCA(caminho)
+            return tabela
+
+        # BACEN (série 433): integração será habilitada após adicionar TabelaIPCA.from_dataframe(df)
+        if fonte_ipca.get("usar_bacen"):
+            meses = int(fonte_ipca.get("meses", 24))
+            logger.info("IPCA: solicitação de BACEN 433 por %d meses (aguardando from_dataframe).", meses)
+            # Exemplo do fluxo futuro (comentado até existir from_dataframe e o coletor):
+            # from infrastructure.data.coletor_bacen import coletar_ipca_433
+            # df = coletar_ipca_433(meses=meses)         # df com colunas ['data','ipca'], em % (ou fração)
+            # tabela = TabelaIPCA.from_dataframe(df)     # Opção A: armazenar em %, entregar fração
+            # return tabela
+            raise NotImplementedError(
+                "Coleta BACEN 433 pendente de TabelaIPCA.from_dataframe(df). "
+                "Use CSV local por enquanto: {'caminho_ipca': 'dados/ipca.csv'}."
+            )
+        
+        # Caso a chave não seja reconhecida
+        raise ValueError(
+            "Fonte do IPCA inválida. Informe 'caminho_ipca' (CSV) ou 'usar_bacen' (bool)."
+        )
+
+
+    def simular_multiplos_bancos(
+        self,
+        caminho_bancos_csv: str,
+        dados_financiamento: dict,
+        fonte_ipca: dict | None = None,
+    ):
+        """
+        Executa simulação em lote para múltiplos bancos, produz ranking e recomendação.
+
+        Parâmetros:
+        caminho_bancos_csv: str
+            Caminho para 'bancos.csv' com colunas mínimas: nome, sistema, taxa_anual.
+            Ex.: 
+                nome,sistema,taxa_anual
+                Banco A,SAC,0.125
+                Banco B,SAC_IPCA,0.09
+        dados_financiamento: dict
+            {'valor_total': float, 'entrada': float, 'prazo_anos': int}
+            Esses valores são comuns a todos os bancos; cada banco fornece o sistema e a taxa.
+        fonte_ipca: dict | None
+            CSV local: {"caminho_ipca": "dados/ipca.csv"}
+            BACEN 433: {"usar_bacen": True, "meses": 24}  (pendente até existir from_dataframe)
+
+        Retorno:
+        resultados: dict[str, SimulacaoResultado]
+            Mapa "rótulo_banco_modalidade" -> SimulacaoResultado
+        ranking: list[tuple[str, float]]
+            Lista (rótulo, total_pago) ordenada em ordem crescente de custo.
+        mensagem: str
+            Texto “Recomendação: <rótulo> com menor custo total.”
+
+        Erros:
+        ValueError, KeyError, FileNotFoundError, NotImplementedError
+            Conforme validações de bancos, IPCA e leitura de arquivos.
+        """
+        # ---------------------- 1) Carregar bancos ---------------------- #
+        # Espera que carregar_bancos_csv valide colunas, normalização de 'sistema' (SAC|SAC_IPCA) e taxa_anual -> float
+        bancos = carregar_bancos_csv(caminho_bancos_csv)
+        if not bancos:
+            raise ValueError("Nenhum banco encontrado em bancos.csv.")
+
+        logger.info("Bancos carregados: %d entradas a simular.", len(bancos))
+
+        # ---------------- 2) Resolver IPCA (uma única vez) --------------- #
+        # Só é necessário carregar IPCA se houver algum banco SAC_IPCA
+        exige_ipca = any((str(b.get("sistema", "")).upper() == "SAC_IPCA") for b in bancos)
+        tabela_ipca = self._carregar_tabela_ipca(fonte_ipca, exige_ipca)
+
+        # ------------------ 3) Simular por banco/modalidade --------------- #
+        resultados: dict[str, SimulacaoResultado] = {}
+
+        for b in bancos:
+            nome_banco = str(b["nome"]).strip()
+            sistema = str(b["sistema"]).upper().strip()      # "SAC" ou "SAC_IPCA"
+            taxa_anual = float(b["taxa_anual"])
+
+            # Monta Financiamento reusando helpers existentes (validações centralizadas)
+            fin = self._montar_financiamento(dados_financiamento, sistema, taxa_anual)
+
+            if sistema == "SAC":
+                simulador = SimuladorSAC(fin, taxa_anual)    # override explícito de taxa anual
+                resultado = simulador.simular()
+                rotulo = f"{nome_banco} – SAC"
+            elif sistema == "SAC_IPCA":
+                if tabela_ipca is None:
+                    # Defesa adicional (não deveria ocorrer se _carregar_tabela_ipca foi chamado com exige_ipca=True)
+                    raise RuntimeError("Tabela IPCA não carregada para banco SAC_IPCA.")
+                simulador = SimuladorSAC_IPCA(financiamento=fin, tabela_ipca=tabela_ipca)
+                resultado = simulador.simular()
+                rotulo = f"{nome_banco} – SAC IPCA+"
+            else:
+                # Defesa contra valores inesperados (o leitor deve normalizar, mas mantém robustez)
+                raise ValueError(f"Sistema de amortização inválido em bancos.csv: {sistema!r}")
+
+            resultados[rotulo] = resultado
+
+        # ------------------------ 4) Construir ranking -------------------- #
+        # Ordena por custo total (crescente). Em empate, ordena por rótulo para ranking estável.
+        ranking = sorted(
+            ((rotulo, res.total_pago) for rotulo, res in resultados.items()),
+            key=lambda x: (x[1], x[0])
+        )
+
+        # -------------------- 5) Mensagem de recomendação ---------------- #
+        vencedor, menor_total = ranking[0]
+        mensagem = f"Recomendação: {vencedor} com menor custo total."
+
+        # ----------------------------- Logs ------------------------------ #
+        qtd_bancos = len(bancos)
+        qtd_sac_ipca = sum(1 for b in bancos if str(b["sistema"]).upper() == "SAC_IPCA")
+        logger.info(
+            "Simulação multi-bancos concluída: %d bancos (SAC_IPCA=%d). Vencedor=%s ; total=%.2f",
+            qtd_bancos, qtd_sac_ipca, vencedor, menor_total
+        )
+
+        return resultados, ranking, mensagem
+
+
