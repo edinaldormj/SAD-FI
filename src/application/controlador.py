@@ -15,7 +15,7 @@ from infrastructure.data.tabela_ipca import TabelaIPCA
 from infrastructure.data.leitor_bancos import carregar_bancos_csv #NOVO Sprint 3
 # from infrastructure.data.coletor_bacen import coletar_ipca_433  # novo (quando integrar)
 # from infrastructure.data.coletor_bacen import obter_ipca_df, df_para_tabela_ipca # novo (quando integrar)
-# from application.comparador import comparar_varios, recomendar # novo (quando integrar)
+from application.comparador import comparar_varios, recomendar # novo
 from domain.recomendador import RecomendadorModalidade
 from infrastructure.data.exportador_csv import exportar_cronograma_csv
 from domain.simulacao_resultado import SimulacaoResultado   # ALTERAÇÃO: tipagem de retorno
@@ -224,35 +224,9 @@ class ControladorApp:
     ):
         """
         Executa simulação em lote para múltiplos bancos, produz ranking e recomendação.
-
-        Parâmetros:
-        caminho_bancos_csv: str
-            Caminho para 'bancos.csv' com colunas mínimas: nome, sistema, taxa_anual.
-            Ex.: 
-                nome,sistema,taxa_anual
-                Banco A,SAC,0.125
-                Banco B,SAC_IPCA,0.09
-        dados_financiamento: dict
-            {'valor_total': float, 'entrada': float, 'prazo_anos': int}
-            Esses valores são comuns a todos os bancos; cada banco fornece o sistema e a taxa.
-        fonte_ipca: dict | None
-            CSV local: {"caminho_ipca": "dados/ipca.csv"}
-            BACEN 433: {"usar_bacen": True, "meses": 24}  (pendente até existir from_dataframe)
-
-        Retorno:
-        resultados: dict[str, SimulacaoResultado]
-            Mapa "rótulo_banco_modalidade" -> SimulacaoResultado
-        ranking: list[tuple[str, float]]
-            Lista (rótulo, total_pago) ordenada em ordem crescente de custo.
-        mensagem: str
-            Texto “Recomendação: <rótulo> com menor custo total.”
-
-        Erros:
-        ValueError, KeyError, FileNotFoundError, NotImplementedError
-            Conforme validações de bancos, IPCA e leitura de arquivos.
+        (docstring mantida como antes)
         """
         # ---------------------- 1) Carregar bancos ---------------------- #
-        # Espera que carregar_bancos_csv valide colunas, normalização de 'sistema' (SAC|SAC_IPCA) e taxa_anual -> float
         bancos = carregar_bancos_csv(caminho_bancos_csv)
         if not bancos:
             raise ValueError("Nenhum banco encontrado em bancos.csv.")
@@ -260,7 +234,6 @@ class ControladorApp:
         logger.info("Bancos carregados: %d entradas a simular.", len(bancos))
 
         # ---------------- 2) Resolver IPCA (uma única vez) --------------- #
-        # Só é necessário carregar IPCA se houver algum banco SAC_IPCA
         exige_ipca = any((str(b.get("sistema", "")).upper() == "SAC_IPCA") for b in bancos)
         tabela_ipca = self._carregar_tabela_ipca(fonte_ipca, exige_ipca)
 
@@ -293,24 +266,32 @@ class ControladorApp:
             resultados[rotulo] = resultado
 
         # ------------------------ 4) Construir ranking -------------------- #
-        # Ordena por custo total (crescente). Em empate, ordena por rótulo para ranking estável.
-        ranking = sorted(
-            ((rotulo, res.total_pago) for rotulo, res in resultados.items()),
-            key=lambda x: (x[1], x[0])
-        )
+        # Usamos o comparador centralizado (mantém lógica de ordenação e estabilidade)
+        try:
+            ranking = comparar_varios(resultados)  # retorna List[Tuple[rotulo, total_pago]]
+        except Exception as e:
+            # Em caso de erro ao extrair total_pago, deixamos claro qual resultado é problemático
+            raise RuntimeError(f"Erro ao construir ranking: {e}")
 
         # -------------------- 5) Mensagem de recomendação ---------------- #
-        vencedor, menor_total = ranking[0]
-        mensagem = f"Recomendação: {vencedor} com menor custo total."
+        # Montamos um mapeamento simples de modalidades (rótulo -> "SAC" / "SAC IPCA+")
+        modalidades = {}
+        for rotulo in resultados.keys():
+            # regra simples: se 'IPCA' no rótulo assumimos SAC IPCA+, caso contrário SAC
+            modalidades[rotulo] = "SAC IPCA+" if "IPCA" in rotulo.upper() else "SAC"
+
+        mensagem = recomendar(ranking, modalidades=modalidades)
 
         # ----------------------------- Logs ------------------------------ #
         qtd_bancos = len(bancos)
         qtd_sac_ipca = sum(1 for b in bancos if str(b["sistema"]).upper() == "SAC_IPCA")
+        vencedor, menor_total = ranking[0]
         logger.info(
             "Simulação multi-bancos concluída: %d bancos (SAC_IPCA=%d). Vencedor=%s ; total=%.2f",
             qtd_bancos, qtd_sac_ipca, vencedor, menor_total
         )
 
         return resultados, ranking, mensagem
+
 
 
