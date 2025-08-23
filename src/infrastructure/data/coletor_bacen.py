@@ -22,11 +22,19 @@ def _periodo_padrao(meses: int = MESES_HISTORICO) -> tuple[str, str]:
 
 def obter_ipca_df(meses: int = MESES_HISTORICO,
                   data_inicial: Optional[str] = None,
-                  data_final: Optional[str] = None) -> pd.DataFrame:
+                  data_final: Optional[str] = None,
+                   fixture_csv_path: Optional[str] = None) -> pd.DataFrame:
+    # 0) se forneceu fixture offline, lê e normaliza
+    if fixture_csv_path is not None:
+        df = pd.read_csv(fixture_csv_path)
+        return _normalizar_df(df) 
+    
+    # 1) Determinar período padrão se datas não informadas
     di, df = (data_inicial, data_final)
     if di is None or df is None:
         di, df = _periodo_padrao(meses)
-    # 1) Tenta bcdata
+
+    # 2) Tenta bcdata
     try:
         from bcdata import sgs as _sgs  # type: ignore
         raw = _sgs.get({str(SGS_IPCA_SERIE): SGS_IPCA_SERIE}, start=di, end=df)
@@ -40,7 +48,8 @@ def obter_ipca_df(meses: int = MESES_HISTORICO,
             return _normalizar_df(df_ipca)
     except Exception:
         pass
-    # 2) Fallback requests
+
+    # 3) Fallback requests
     return _obter_ipca_via_requests(SGS_IPCA_SERIE, di, df)
 
 def _obter_ipca_via_requests(serie: int, data_inicial: str, data_final: str) -> pd.DataFrame:
