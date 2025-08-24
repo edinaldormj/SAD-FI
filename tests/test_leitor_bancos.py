@@ -30,10 +30,10 @@ def testar_csv_valido(tmpdir):
     """
     print("\n🔧 CSV válido")
     content = """nome,sistema,taxa_anual
-Banco A,SAC,0.12
-Banco B,SAC_IPCA,0.085
-Banco C,sac,0.10
-"""
+    Banco A,SAC,0.12
+    Banco B,SAC_IPCA,0.085
+    Banco C,sac,0.10
+    """
     p = _write(tmpdir, "bancos_ok.csv", content)
     bancos = carregar_bancos_csv(p)
     print("✅ carregado:", bancos)
@@ -48,8 +48,8 @@ def testar_csv_invalido_colunas(tmpdir):
     """
     print("\n🔧 Colunas faltando")
     content = """nome,sistema
-Banco A,SAC
-"""
+    Banco A,SAC
+    """
     p = _write(tmpdir, "bancos_bad_cols.csv", content)
     try:
         carregar_bancos_csv(p)
@@ -63,8 +63,8 @@ def testar_csv_taxa_invalida(tmpdir):
     """
     print("\n🔧 Taxa inválida (não numérica)")
     content = """nome,sistema,taxa_anual
-Banco A,SAC,abc
-"""
+    Banco A,SAC,abc
+    """
     p = _write(tmpdir, "bancos_bad_taxa.csv", content)
     try:
         carregar_bancos_csv(p)
@@ -78,8 +78,8 @@ def testar_csv_sistema_invalido(tmpdir):
     """
     print("\n🔧 Sistema inválido")
     content = """nome,sistema,taxa_anual
-Banco A,PRICE,0.1
-"""
+    Banco A,PRICE,0.1
+    """
     p = _write(tmpdir, "bancos_bad_sistema.csv", content)
     try:
         carregar_bancos_csv(p)

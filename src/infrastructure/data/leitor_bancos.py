@@ -4,9 +4,9 @@ import os
 # Colunas que são obrigatórias no CSV de bancos
 COLS_OBRIG = ["nome", "sistema", "taxa_anual"]
 
-# Normalizamos os valores de sistema para estas duas opções válidas.
+# Normalizamos os valores de sistema para estas opções válidas.
 # Aceitamos variações de caixa e hífen (ex.: "sac", "SAC-ipca") e convertemos para underscore.
-SISTEMAS_VALIDOS = {"SAC", "SAC_IPCA"}
+SISTEMAS_VALIDOS = {"SAC", "SAC_IPCA", "SAC_TR"}
 
 
 def _normalizar_sistema(valor: str) -> str:
@@ -31,7 +31,7 @@ def carregar_bancos_csv(caminho_csv: str):
     Regras esperadas do arquivo:
       - Deve existir o arquivo no caminho informado (FileNotFoundError caso contrário)
       - Deve ter cabeçalho com, no mínimo, as colunas: nome, sistema, taxa_anual
-      - `sistema` deve ser 'SAC' ou 'SAC_IPCA' (case-insensitive; aceita '-' e '_' e faz normalização)
+      - `ssistema` deve ser 'SAC', 'SAC_IPCA' ou 'SAC_TR' (case-insensitive; aceita '-' e '_' e faz normalização)
       - `taxa_anual` deve estar em FRAÇÃO (ex.: 0.085 = 8.5% a.a.) e ser 0 < x < 1
       - Linhas totalmente em branco são ignoradas
       - Retorna uma lista de dicts com chaves normalizadas: {"nome", "sistema", "taxa_anual"}

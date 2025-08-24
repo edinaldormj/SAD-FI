@@ -19,6 +19,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def inferir_modalidade(rotulo: str) -> str:
+    """
+    Retorna a modalidade a partir do rótulo:
+      - contém 'IPCA' -> 'SAC IPCA+'
+      - contém 'TR'   -> 'SAC TR'
+      - caso contrário -> 'SAC'
+    """
+    up = rotulo.upper()
+    if "IPCA" in up:
+        return "SAC IPCA+"
+    if "TR" in up:
+        return "SAC TR"
+    return "SAC"
+
+
+def mapear_modalidades(rotulos: List[str]) -> Dict[str, str]:
+    return {r: inferir_modalidade(r) for r in rotulos}
+
 
 def comparar_varios(resultados: Dict[str, Any]) -> List[Tuple[str, float]]:
     """

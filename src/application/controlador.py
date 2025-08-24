@@ -12,9 +12,11 @@ from domain.simulador_sac import SimuladorSAC
 from domain.simulador_sac_ipca import SimuladorSAC_IPCA
 from domain.comparador import ComparadorModalidades
 from infrastructure.data.tabela_ipca import TabelaIPCA
+from infrastructure.data.tabela_tr import TabelaTR
+from infrastructure.data.coletor_tr import ColetorTR
 from infrastructure.data.leitor_bancos import carregar_bancos_csv #NOVO Sprint 3
 # from infrastructure.data.coletor_bacen import coletar_ipca_433  # novo (quando integrar)
-# from infrastructure.data.coletor_bacen import obter_ipca_df, df_para_tabela_ipca # novo (quando integrar)
+from infrastructure.data.coletor_bacen import obter_ipca_df, df_para_tabela_ipca
 from application.comparador import comparar_varios, recomendar # novo
 from domain.recomendador import RecomendadorModalidade
 from infrastructure.data.exportador_csv import exportar_cronograma_csv
@@ -39,7 +41,7 @@ class ControladorApp:
     def _validar_campos_comuns(self, dados: dict) -> tuple[str, float]:
         """VALIDA sistema e taxa_juros_anual. Retorna (sistema_normalizado, taxa_anual)."""
         sistema = str(dados.get("sistema", "")).upper()          # ALTERAÇÃO: normalização e leitura segura
-        if sistema not in {"SAC", "SAC_IPCA"}:
+        if sistema not in {"SAC", "SAC_IPCA", "SAC_TR"}:
             raise ValueError(f"Sistema de amortização não suportado: {sistema!r}")  # ALTERAÇÃO: erro claro
 
         taxa_anual = dados.get("taxa_juros_anual")               # ALTERAÇÃO: evitar KeyError
@@ -139,6 +141,18 @@ class ControladorApp:
         dados = {"mensagem_comparacao": mensagem_comparacao}
         return recomendador.recomendar(dados)
 
+    def _carregar_tabela_tr(self, fonte_tr: dict|None, exige_tr: bool) -> TabelaTR|None:
+        if not exige_tr: return None
+        if not fonte_tr: raise KeyError("Fonte da TR não informada.")
+        if fonte_tr.get("fixture_csv_path"):
+            coletor = ColetorTR(fixture_csv_path=fonte_tr["fixture_csv_path"], online=False)
+        elif fonte_tr.get("online"):
+            coletor = ColetorTR(fixture_csv_path=None, online=True, serie=fonte_tr.get("serie"))
+        else:
+            raise ValueError("Fonte da TR inválida. Informe 'fixture_csv_path' ou 'online'.")
+        df_tr = coletor.coletar(inicio=fonte_tr.get("inicio"), fim=fonte_tr.get("fim"))
+        return TabelaTR.from_dataframe(df_tr)
+
     def exportar_resultado(self, simulacao_resultado: Any, nome_base: str) -> str:
         """
         Exporta o resultado de uma simulação para CSV.
@@ -156,142 +170,82 @@ class ControladorApp:
         return caminho
     
 
-    def _carregar_tabela_ipca(self, fonte_ipca: dict | None, exige_ipca: bool):
-        """
-        Helper interno para resolver e carregar a fonte do IPCA.
-
-        Parâmetros:
-        fonte_ipca: dict | None
-            - CSV local: {"caminho_ipca": "dados/ipca.csv"}
-            - BACEN 433: {"usar_bacen": True, "meses": 24}  (pendente até existir TabelaIPCA.from_dataframe)
-        exige_ipca: bool
-            True se há pelo menos um banco SAC_IPCA a ser simulado. Evita
-            carregar IPCA quando todos os bancos são SAC fixo.
-
-        Retorno:
-        TabelaIPCA | None
-            Instância pronta quando necessário; None quando não exigido.
-
-        Erros:
-        KeyError, ValueError: quando a fonte é obrigatória/ inválida.
-        FileNotFoundError: quando caminho_csv não existe (propagado do construtor).
-        NotImplementedError: caminho BACEN ainda não integrado (até existir from_dataframe).
-        """
-        # Se nenhum banco exige IPCA, não há o que carregar
-        if not exige_ipca:
-            logger.info("Nenhum banco SAC_IPCA na lista. IPCA não será carregado.")
-            return None
-
-        # Fonte do IPCA é obrigatória se existe SAC_IPCA
-        if not fonte_ipca:
-            raise KeyError(
-                "Fonte do IPCA não informada para bancos SAC_IPCA. "
-                "Use {'caminho_ipca': '...'} (CSV) ou {'usar_bacen': True, 'meses': N} (BACEN)."
-            )
-
-        # CSV local: mantém o contrato atual (TabelaIPCA lê CSV tratado e armazena %; get_ipca retorna fração)
-        if "caminho_ipca" in fonte_ipca:
-            caminho = str(fonte_ipca["caminho_ipca"]).strip()
-            logger.info("IPCA: carregando a partir de CSV local: %s", caminho)
-            tabela = TabelaIPCA(caminho)
-            return tabela
-
-        # BACEN (série 433): integração será habilitada após adicionar TabelaIPCA.from_dataframe(df)
+    def _carregar_tabela_ipca(self, fonte_ipca: dict|None, exige_ipca: bool) -> TabelaIPCA|None:
+        if not exige_ipca: return None
+        if not fonte_ipca: raise KeyError("Fonte do IPCA não informada.")
         if fonte_ipca.get("usar_bacen"):
             meses = int(fonte_ipca.get("meses", 24))
-            logger.info("IPCA: solicitação de BACEN 433 por %d meses (aguardando from_dataframe).", meses)
-            # Exemplo do fluxo futuro (comentado até existir from_dataframe e o coletor):
-            # from infrastructure.data.coletor_bacen import coletar_ipca_433
-            # df = coletar_ipca_433(meses=meses)         # df com colunas ['data','ipca'], em % (ou fração)
-            # tabela = TabelaIPCA.from_dataframe(df)     # Opção A: armazenar em %, entregar fração
-            # return tabela
-            raise NotImplementedError(
-                "Coleta BACEN 433 pendente de TabelaIPCA.from_dataframe(df). "
-                "Use CSV local por enquanto: {'caminho_ipca': 'dados/ipca.csv'}."
-            )
-        
-        # Caso a chave não seja reconhecida
-        raise ValueError(
-            "Fonte do IPCA inválida. Informe 'caminho_ipca' (CSV) ou 'usar_bacen' (bool)."
-        )
+            df_ipca = obter_ipca_df(meses=meses)
+            return TabelaIPCA.from_dataframe(df_ipca)
+        if "caminho_ipca" in fonte_ipca:
+            return TabelaIPCA(fonte_ipca["caminho_ipca"])
+        raise ValueError("Fonte do IPCA inválida.")
 
 
-    def simular_multiplos_bancos(
-        self,
-        caminho_bancos_csv: str,
-        dados_financiamento: dict,
-        fonte_ipca: dict | None = None,
-    ):
-        """
-        Executa simulação em lote para múltiplos bancos, produz ranking e recomendação.
-        (docstring mantida como antes)
-        """
-        # ---------------------- 1) Carregar bancos ---------------------- #
+    def simular_multiplos_bancos(self, caminho_bancos_csv, dados_financiamento, fonte_ipca=None, fonte_tr=None):
         bancos = carregar_bancos_csv(caminho_bancos_csv)
         if not bancos:
             raise ValueError("Nenhum banco encontrado em bancos.csv.")
 
-        logger.info("Bancos carregados: %d entradas a simular.", len(bancos))
+        exige_ipca = any(b["sistema"].upper()=="SAC_IPCA" for b in bancos)
+        exige_tr   = any(b["sistema"].upper()=="SAC_TR"   for b in bancos)
 
-        # ---------------- 2) Resolver IPCA (uma única vez) --------------- #
-        exige_ipca = any((str(b.get("sistema", "")).upper() == "SAC_IPCA") for b in bancos)
+        # --- IPCA (uma vez) ---
         tabela_ipca = self._carregar_tabela_ipca(fonte_ipca, exige_ipca)
 
-        # ------------------ 3) Simular por banco/modalidade --------------- #
-        resultados: dict[str, SimulacaoResultado] = {}
+        # acolchoa IPCA se necessário
+        if tabela_ipca is not None:
+            prazo_meses = int(round(dados_financiamento["prazo_anos"] * 12))
+            tam = len(tabela_ipca.tabela)
+            if tam < prazo_meses:
+                ultimo = float(tabela_ipca.tabela.loc[tam-1, "ipca"])
+                faltam = prazo_meses - tam
+                import pandas as pd
+                pad = pd.DataFrame({"ipca": [ultimo]*faltam})
+                tabela_ipca.tabela = pd.concat([tabela_ipca.tabela, pad], ignore_index=True)
 
+        # --- TR (uma vez) ---
+        tr_series = None  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< (novo)
+        tabela_tr = self._carregar_tabela_tr(fonte_tr, exige_tr)
+        if tabela_tr is not None and getattr(tabela_tr, "df", None) is not None and "tr" in tabela_tr.df.columns:
+            tr_series = tabela_tr.df["tr"].tolist()
+
+        resultados = {}
         for b in bancos:
-            nome_banco = str(b["nome"]).strip()
-            sistema = str(b["sistema"]).upper().strip()      # "SAC" ou "SAC_IPCA"
-            taxa_anual = float(b["taxa_anual"])
+            nome = b["nome"].strip()
+            sistema = b["sistema"].upper().strip()
+            taxa = float(b["taxa_anual"])
 
-            # Monta Financiamento reusando helpers existentes (validações centralizadas)
-            fin = self._montar_financiamento(dados_financiamento, sistema, taxa_anual)
+            fin = self._montar_financiamento(dados_financiamento, sistema, taxa)
 
             if sistema == "SAC":
-                simulador = SimuladorSAC(fin, taxa_anual)    # override explícito de taxa anual
-                resultado = simulador.simular()
-                rotulo = f"{nome_banco} – SAC"
+                resultado = SimuladorSAC(fin, taxa).simular()
+                rotulo = f"{nome} – SAC"
+
             elif sistema == "SAC_IPCA":
                 if tabela_ipca is None:
-                    # Defesa adicional (não deveria ocorrer se _carregar_tabela_ipca foi chamado com exige_ipca=True)
-                    raise RuntimeError("Tabela IPCA não carregada para banco SAC_IPCA.")
-                simulador = SimuladorSAC_IPCA(financiamento=fin, tabela_ipca=tabela_ipca)
-                resultado = simulador.simular()
-                rotulo = f"{nome_banco} – SAC IPCA+"
+                    raise RuntimeError("IPCA não carregado.")
+                resultado = SimuladorSAC_IPCA(fin, tabela_ipca).simular()
+                rotulo = f"{nome} – SAC IPCA+"
+
+            elif sistema == "SAC_TR":
+                # garante que tr_series existe e tem conteúdo
+                if tr_series is None or len(tr_series) == 0:
+                    raise RuntimeError("TR não carregada (tr_series vazio).")
+                resultado = SimuladorSAC(fin, taxa).simular(usar_tr=True, tr_series=tr_series)
+                rotulo = f"{nome} – SAC TR"
+
             else:
-                # Defesa contra valores inesperados (o leitor deve normalizar, mas mantém robustez)
-                raise ValueError(f"Sistema de amortização inválido em bancos.csv: {sistema!r}")
+                raise ValueError(f"Sistema inválido: {sistema!r}")
 
             resultados[rotulo] = resultado
 
-        # ------------------------ 4) Construir ranking -------------------- #
-        # Usamos o comparador centralizado (mantém lógica de ordenação e estabilidade)
-        try:
-            ranking = comparar_varios(resultados)  # retorna List[Tuple[rotulo, total_pago]]
-        except Exception as e:
-            # Em caso de erro ao extrair total_pago, deixamos claro qual resultado é problemático
-            raise RuntimeError(f"Erro ao construir ranking: {e}")
-
-        # -------------------- 5) Mensagem de recomendação ---------------- #
-        # Montamos um mapeamento simples de modalidades (rótulo -> "SAC" / "SAC IPCA+")
-        modalidades = {}
-        for rotulo in resultados.keys():
-            # regra simples: se 'IPCA' no rótulo assumimos SAC IPCA+, caso contrário SAC
-            modalidades[rotulo] = "SAC IPCA+" if "IPCA" in rotulo.upper() else "SAC"
-
-        mensagem = recomendar(ranking, modalidades=modalidades)
-
-        # ----------------------------- Logs ------------------------------ #
-        qtd_bancos = len(bancos)
-        qtd_sac_ipca = sum(1 for b in bancos if str(b["sistema"]).upper() == "SAC_IPCA")
-        vencedor, menor_total = ranking[0]
-        logger.info(
-            "Simulação multi-bancos concluída: %d bancos (SAC_IPCA=%d). Vencedor=%s ; total=%.2f",
-            qtd_bancos, qtd_sac_ipca, vencedor, menor_total
-        )
-
+        from application.comparador import mapear_modalidades, comparar_varios, recomendar
+        ranking = comparar_varios(resultados)
+        mensagem = recomendar(ranking, modalidades=mapear_modalidades(list(resultados.keys())))
         return resultados, ranking, mensagem
+
+
 
 
 
