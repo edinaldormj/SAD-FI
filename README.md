@@ -4,11 +4,21 @@ Este é um projeto de MVP desenvolvido como trabalho final de pós-graduação e
 O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparação de modalidades de financiamento imobiliário.
 
 ## ✨ Novidades da Sprint 2
-- **SAC fixo com TR opcional**: parâmetros `usar_tr` e `tr_mensal` controlam a aplicação da TR.
-- **SAC + IPCA com deflação**: aceitação de índices negativos, com ajuste no último mês para quitar saldo.
-- **Comparador e recomendador** integrados ao `ControladorApp`.
-- **Exportação CSV** via `SimulacaoResultado.to_dataframe()` e função `exportar_cronograma_csv(...)`.
-- Diagramas UML revisados para refletir as mudanças
+- **Fluxo offline-first consolidado** com dados oficiais do Bacen via CSVs (IPCA e TR), eliminando dependência de rede nas evidências.
+
+- **ControladorApp.simular_multiplos_bancos**: orquestra simulações em lote, gera ranking por custo total e mensagem de recomendação.
+
+- **Comparador (multi)**: ranking estável (ordenação consistente em empates) e mensagem padronizada.
+
+- **TR mensal compatível**: derivada da série diária (% → fração), agregação por mês e padding de lacunas.
+
+- **TabelaIPCA / normalização**: carga via CSV oficial (latin-1, ;), conversão para fração e checagens de integridade.
+
+- **Notebook 02 (evidências)**: consome a API do Controlador, produz resultados/ranking.csv e resultados/ranking.png (remoção de lógica duplicada — em andamento).
+
+- **Reprodutibilidade**: ambiente congelado em requirements.txt, contratos claros de I/O e Diagrama de Contexto (Sprint 3) em PlantUML.
+
+- **Leitor de bancos CSV**: validação de colunas, aceitação de vírgula decimal, normalização e deduplicação por menor taxa.
 
 ---
 
@@ -50,6 +60,7 @@ Para manter rastreabilidade entre código e documentação, os principais diagra
 | Classes     | [`Diagrama de Classes`](docs/out/docs/classes/classes_Sprint2_rev_parcela.png) | Classes atualizadas com TR opcional, vínculos corretos e atributos extras. |
 | Estados     | [`Diagrama de Estados`](docs/out/docs/estados/SADFI_Estados_Sprint2_Linear.png)             | Fluxo linear e claro, com início e fim explícitos.                         |
 | Sequência   | [`Diagrama de Sequência`](docs/out/docs/sequencia/SADFI_Sequencia_Sprint2_Rev_Fix.png)     | Fluxo de mensagens, com parâmetros de TR explícitos e exportação opcional. |
+| Contexto    | [`Contexto Sprint 3`](docs\out\docs\contexto_sprint3/Contexto_SAD-FI_Sprint3.png)     | Visão do fluxo offline-first, fontes (CSVs Bacen), Controlador, Notebook e Testes. |
 
 ---
 
@@ -143,6 +154,22 @@ Projeto acadêmico sem fins comerciais.
 | 28 | Atualizar README com entregas da Sprint 2                      | 🟩 Documentação   | ✅     | Sprint 2  |
 
 ---
+
+|  # | Título da Issue                                                | Etiquetas                            | Prioridade | Status | Milestone |
+| -: | -------------------------------------------------------------- | ------------------------------------ | ---------: | :----: | :-------: |
+| 29 | task: **Docs, Diagramas e Evidências (finalização)**           | 🟩 Documentação                      |       must |    ⏳   |  Sprint 3 |
+| 30 | task: **UI mínima / CLI (fallback)**                           | 🟩 Documentação, 🟨 Visualização     |     should |    ⭕   |  Sprint 3 |
+| 31 | test: **Testes unitários e integração (Sprint 3)**             | 🟪 Testes                            |       must |    ✅   |  Sprint 3 |
+| 32 | task: **Notebook — adaptar para consumir API do Controlador**  | 🟨 Visualização                      |       must |    ⏳   |  Sprint 3 |
+| 33 | feat: **Controlador — simular\_multiplos\_bancos**             | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
+| 34 | feat: **Comparador (multi) — comparar\_varios + recomendar**   | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
+| 35 | feat: **Coletor BACEN 433 (stub + offline fixture)**           | 🟦 Técnica                           |     should |    ✅   |  Sprint 3 |
+| 36 | feat: **TabelaIPCA.from\_dataframe(df)**                       | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
+| 37 | task: **Ambiente e dependências — atualizar requirements.txt** | 🟧 Reprodutibilidade & Empacotamento |       must |    ✅   |  Sprint 3 |
+| 38 | test: **Leitor de bancos CSV — testes básicos**                | 🟪 Testes                            |       must |    ✅   |  Sprint 3 |
+| 39 | feat: **Leitor de bancos CSV (carregar\_bancos\_csv)**         | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
+
+
 
 ## 📚 Histórico de Comandos Git
 

@@ -1,0 +1,212 @@
+﻿🔹 Título: task: Docs, Diagramas e Evidências (finalização)
+🏷️ Labels: Documentação, priority:must
+📝 Conteúdo:
+Resumo:
+Atualizar docs com o que foi entregue:
+- atualizar diagrams (docs/*.puml) se necessário
+- README com instruções de uso e setup
+- gerar evidências: resultados/ranking.csv e ranking.png
+- anexar runbook_e2e.md e acceptance_scenarios.md
+
+Checklist:
+- [ ] atualizar README
+- [ ] exportar diagramas atualizados
+- [ ] coletar evidências no diretório results/
+
+
+---
+
+🔹 Título: task: UI mínima / CLI (fallback)
+🏷️ Labels: Documentação, Visualização, priority: should
+📝 Conteúdo:
+Resumo:
+Implementar UI mínima (pode ser HTML simples/local) ou CLI que chama ControladorApp e exibe ranking + mensagem.
+Checklist:
+- [ ] CLI que aceita parâmetros e chama Controller
+- [ ] notebook/CLI exportam CSV/PNG
+- [ ] UX messages aplicadas (UX-mensagens.md)
+
+
+---
+
+🔹 Título: test: Testes unitários e integração (Sprint 3)
+🏷️ Labels: Testes, priority:must
+📝 Conteúdo:
+Resumo:
+Reunir e ajustar testes existentes e novos para Sprint 3 (domínio + infra + aplicação).
+
+Checklist:
+- [ ] garantir que testes mantidos rodem (lista atual)
+- [ ] adicionar testes para TabelaIPCA.from_dataframe
+- [ ] testes para comparador multi
+- [ ] integração offline: controlador + leitor + tabela fixture
+- [ ] preparar E2E runbook (ver runbook_e2e.md)
+
+
+---
+
+🔹 Título: task: Notebook — adaptar para consumir API do Controlador
+🏷️ Labels: Visualização, priority:must
+📝 Conteúdo:
+Resumo:
+Atualizar notebooks/01_visualizacao_simulacao.ipynb para:
+- chamar ControladorApp.simular_multiplos_bancos
+- exportar resultados/ranking.csv e results/ranking.png
+- remover duplicação de lógica do domínio
+
+Checklist:
+- [ ] adaptar chamadas
+- [ ] confirmar outputs (CSV/PNG)
+
+
+---
+
+🔹 Título: feat: Controlador — simular_multiplos_bancos
+🏷️ Labels: Técnica, priority:must
+📝 Conteúdo:
+Resumo:
+Adicionar método simular_multiplos_bancos(caminho_bancos_csv, dados_financiamento, fonte_ipca) em src/application/controlador.py.
+
+Requisitos:
+- usar carregar_bancos_csv para obter lista de bancos
+- usar _carregar_tabela_ipca(fonte_ipca, exige_ipca) helper
+- para cada banco montar Financiamento e executar SimuladorSAC ou SimuladorSAC_IPCA
+- retornar (resultados, ranking, mensagem)
+
+Checklist:
+- [ ] implementar método
+- [ ] integrar com comparador multi
+- [ ] testes de integração offline (fixtures)
+- [ ] smoke script para demo
+
+
+---
+
+🔹 Título: feat: Comparador (multi) — comparar_varios + recomendar
+🏷️ Labels: Técnica, priority:must
+📝 Conteúdo:
+Resumo:
+Implementar funções em src/application/comparador.py:
+- comparar_varios(resultados: dict[str, SimulacaoResultado]) -> list[tuple[str, float]]
+- recomendar(ranking: list[tuple[str, float]]) -> str
+
+Regras:
+- ranking ordenado por total_pago crescente; empates ordenados por rótulo (estável)
+- mensagem: "Recomendação: <rótulo> com menor custo total."
+
+Checklist:
+- [ ] implementar comparar_varios
+- [ ] implementar recomendar
+- [ ] testes unitários do comparador
+
+
+---
+
+🔹 Título: feat: Coletor BACEN 433 (stub + offline fixture)
+🏷️ Labels: Técnica, priority: should
+📝 Conteúdo:
+Resumo:
+Adicionar coletor em src/infrastructure/data/coletor_bacen.py com função `coletar_ipca_433(meses=24)`.
+
+Fase 1 (stub/offline):
+- [ ] Implementar função que retorna DataFrame a partir de fixture local (dados/ipca_bacen_fixture.csv)
+- [ ] Documentar fluxo
+- [ ] Marcar como 'pending' para coleta online (bcdata/requests) quando permitido
+
+Fase 2 (opcional):
+- [ ] Integrar bcdata + fallback requests para coleta online
+
+Checklist:
+- [ ] stub devolvendo DataFrame
+- [ ] fixture de teste
+- [ ] integração com TabelaIPCA.from_dataframe
+
+
+---
+
+🔹 Título: feat: TabelaIPCA.from_dataframe(df)
+🏷️ Labels: Técnica, priority:must
+📝 Conteúdo:
+Resumo:
+Estender src/infrastructure/data/tabela_ipca.py com método de classe `from_dataframe(df)` para aceitar DataFrame vindo do coletor BACEN.
+
+Requisitos:
+- Detectar unidade (se max(ipca) <= 1.0 tratar como fração; converter para % internamente)
+- Normalizar colunas: ['data', 'ipca'] (data em YYYY-MM)
+- Armazenar internamente em % (mesmo comportamento do construtor CSV)
+- Garantir get_ipca(m) retorna fração (dividir por 100)
+- Manter compatibilidade com os testes existentes (IndexError fora do range)
+
+Checklist:
+- [ ] Implementar from_dataframe
+- [ ] Escrever testes: % vs fração; index out-of-range
+- [ ] Documentar contrato
+
+
+---
+
+🔹 Título: task: Ambiente e dependências — atualizar requirements.txt
+🏷️ Labels: priority:must, Reprodutibilidade & Empacotamento
+📝 Conteúdo:
+Resumo:
+Gerar/atualizar requirements.txt com o ambiente corrente (congelado).
+
+Checklist:
+- [ ] Rodar `pip freeze > requirements.txt` no venv do projeto
+- [ ] Commitar e push
+- [ ] Validar instalação em um venv novo (opcional)
+- [ ] Documentar comandos de setup no README / runbook
+
+Observação:
+Objetivo: facilitar "pip install -r requirements.txt" para qualquer usuário.
+
+
+---
+
+🔹 Título: test: Leitor de bancos CSV — testes básicos
+🏷️ Labels: Testes, priority:must
+📝 Conteúdo:
+Resumo:
+Script de testes estilo projeto (assert/print/log) cobrindo o leitor de bancos.
+
+Checklist:
+- [ ] Teste CSV válido (3 bancos)
+- [ ] Teste: colunas faltando
+- [ ] Teste: taxa inválida (não numérica)
+- [ ] Teste: sistema inválido
+- [ ] Teste: CSV vazio
+- [ ] Instruções: `python tests/test_leitor_bancos.py`
+
+Observações:
+Não usar pytest; manter estilo atual do repositório.
+
+
+---
+
+🔹 Título: feat: Leitor de bancos CSV (carregar_bancos_csv)
+🏷️ Labels: Técnica, priority:must
+📝 Conteúdo:
+Resumo:
+Implementar função `carregar_bancos_csv(caminho_csv)` em src/infrastructure/data/leitor_bancos.py.
+
+Requisitos / Contratos (ver contratos-io.md):
+- CSV deve ter cabeçalho com colunas: nome,sistema,taxa_anual
+- sistema ∈ {SAC, SAC_IPCA} (aceitar variações, hífen, case-insensitive)
+- taxa_anual em FRAÇÃO (0 < x < 1)
+- aceitar vírgula decimal (ex: "0,085")
+- suportar BOM (utf-8-sig)
+- ignorar linhas em branco
+- retornar list[dict] com chaves: nome, sistema (normalizado), taxa_anual (float)
+
+Checklist:
+- [ ] Implementar função `carregar_bancos_csv`
+- [ ] Mensagens de erro amigáveis (colunas faltando / taxa inválida / sistema inválido / CSV vazio)
+- [ ] Documentar uso em contratos-io.md (refinar se necessário)
+- [ ] Criar branch `feat/leitor-bancos` e abrir PR
+
+Referências:
+- docs/contratos-io.md
+
+
+---
+
