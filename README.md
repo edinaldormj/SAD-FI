@@ -3,7 +3,7 @@
 Este é um projeto de MVP desenvolvido como trabalho final de pós-graduação em Ciência de Dados e Inteligência Artificial.  
 O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparação de modalidades de financiamento imobiliário.
 
-## ✨ Novidades da Sprint 2
+## ✨ Novidades da Sprint 3
 - **Fluxo offline-first consolidado** com dados oficiais do Bacen via CSVs (IPCA e TR), eliminando dependência de rede nas evidências.
 
 - **ControladorApp.simular_multiplos_bancos**: orquestra simulações em lote, gera ranking por custo total e mensagem de recomendação.
@@ -60,7 +60,7 @@ Para manter rastreabilidade entre código e documentação, os principais diagra
 | Classes     | [`Diagrama de Classes`](docs/out/docs/classes/classes_Sprint2_rev_parcela.png) | Classes atualizadas com TR opcional, vínculos corretos e atributos extras. |
 | Estados     | [`Diagrama de Estados`](docs/out/docs/estados/SADFI_Estados_Sprint2_Linear.png)             | Fluxo linear e claro, com início e fim explícitos.                         |
 | Sequência   | [`Diagrama de Sequência`](docs/out/docs/sequencia/SADFI_Sequencia_Sprint2_Rev_Fix.png)     | Fluxo de mensagens, com parâmetros de TR explícitos e exportação opcional. |
-| Contexto    | [`Contexto Sprint 3`](docs\out\docs\contexto_sprint3/Contexto_SAD-FI_Sprint3.png)     | Visão do fluxo offline-first, fontes (CSVs Bacen), Controlador, Notebook e Testes. |
+| Contexto    | [`Contexto Sprint 3`](docs/out/docs/contexto_sprint3/Contexto_SAD-FI_Sprint3.png)     | Visão do fluxo offline-first, fontes (CSVs Bacen), Controlador, Notebook e Testes. |
 
 ---
 
