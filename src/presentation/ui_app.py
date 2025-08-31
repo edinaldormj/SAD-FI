@@ -12,10 +12,9 @@ import pandas as pd
 from presentation.ui_state import FinanciamentoInput, FontesInput
 from presentation.formatters import brl
 import streamlit as st
-from pathlib import Path
 from matplotlib.ticker import FuncFormatter
-import numpy as np
 import re, unicodedata
+from io import StringIO
 
 # --- LOG: configuração básica e helper de estatísticas de arquivo ---
 import logging
@@ -43,7 +42,7 @@ def _file_stat(path_str: str) -> str:
 # -------------------------------------------------------------------
 
 
-# ---------------- utilitários de arquivo (uploads e fallback) ----------------
+# ---------------- utilitários de arquivo (uploads e agregador/fallback) ----------------
 def save_upload(uploaded_file, dest_path: str) -> str:
     """Salva o arquivo enviado no caminho informado (criando diretórios)."""
     dest = Path(dest_path)
@@ -52,25 +51,114 @@ def save_upload(uploaded_file, dest_path: str) -> str:
     dest.write_bytes(data)
     return str(dest)
 
-def atualizar_bancos_csv(dest: str = "dados/bancos.csv"):
+def atualizar_bancos_csv(dest: str = "dados/bancos.csv", fontes_dir: str = "dados/fontes_bancos"):
     """
-    Gera/atualiza bancos.csv a partir de um template local (fallback offline).
-    Se existir 'dados/_templates/bancos.template.csv', copia-o.
-    Caso contrário, cria um CSV mínimo com cabeçalho.
+    Agrega vários CSVs de fontes locais em um único bancos.csv.
+    - Lê todos *.csv em dados/fontes_bancos/
+    - Detecta separador (vírgula/ponto-e-vírgula) e encoding (utf-8; fallback latin1)
+    - Normaliza colunas e modalidade (SAC, SAC_TR, SAC_IPCA)
+    - Gera 'Oferta' = "<Banco> — <Modalidade bonitinha>"
+    Fallback: se não houver arquivos, usa template ou cria mínimo.
     """
+    src_dir = Path(fontes_dir)
     dest_p = Path(dest); dest_p.parent.mkdir(parents=True, exist_ok=True)
-    template = Path("dados/_templates/bancos.template.csv")
-    if template.exists():
-        dest_p.write_bytes(template.read_bytes())
-        logger.warning("Fallback aplicado (bancos.csv por template): %s -> %s", template, dest_p)
-        return str(dest_p), "Template aplicado (fallback)."
+    arquivos = sorted(src_dir.glob("*.csv"))
 
-    # CSV mínimo (ajuste conforme seu contrato de ofertas)
-    minimo = "Oferta,Total Pago,Tipo\nBanco A — SAC,0,SAC\nBanco B — SAC_TR,0,SAC_TR\nBanco C — SAC_IPCA,0,SAC_IPCA\n"
-    dest_p.write_text(minimo, encoding="utf-8")
-    logger.warning("Fallback aplicado (bancos.csv mínimo gerado): %s", dest_p)
-    return str(dest_p), "CSV mínimo criado (fallback)."
+    if not arquivos:
+        # Fallback antigo (template/minimal)
+        template = Path("dados/_templates/bancos.template.csv")
+        if template.exists():
+            dest_p.write_bytes(template.read_bytes())
+            logger.warning("Fallback aplicado (template) → %s", dest_p)
+            return str(dest_p), "Template aplicado (fallback)."
+        minimo = "Oferta,Tipo\nBanco A — SAC,SAC\nBanco B — SAC TR,SAC_TR\nBanco C — SAC IPCA+,SAC_IPCA\n"
+        dest_p.write_text(minimo, encoding="utf-8")
+        logger.warning("Fallback aplicado (mínimo gerado) → %s", dest_p)
+        return str(dest_p), "CSV mínimo criado (fallback)."
 
+    frames = []
+    for f in arquivos:
+        # tenta utf-8; fallback latin1
+        txt = None
+        for enc in ("utf-8", "latin1"):
+            try:
+                txt = f.read_text(encoding=enc)
+                break
+            except Exception:
+                continue
+        if txt is None:
+            logger.warning("Ignorado (encoding ilegível): %s", f)
+            continue
+
+        # detecta separador
+        sep = ";" if txt.count(";") > txt.count(",") else ","
+        df = pd.read_csv(StringIO(txt), sep=sep, engine="python")
+
+        # normaliza nomes de colunas
+        def _norm_col(c: str) -> str:
+            c = unicodedata.normalize("NFKD", c).encode("ascii", "ignore").decode("ascii")
+            c = c.strip().lower().replace("-", "_").replace(" ", "_")
+            return c
+
+        df.columns = [_norm_col(c) for c in df.columns]
+
+        def pick(*cands):
+            for c in cands:
+                if c in df.columns:
+                    return df[c].astype(str)
+            return pd.Series([""] * len(df))
+
+        banco = pick("banco", "instituicao", "instituicao_financeira", "origem", "oferta", "nome")
+        tipo_raw = pick("tipo", "modalidade", "produto", "linha", "modalidade_financiamento")
+
+        # se vazio, tenta deduzir a partir do nome do arquivo
+        tipo_raw = tipo_raw.replace("", f.stem)
+
+        def norm_tipo(s: str) -> str | None:
+            s = (s or "").upper().replace("_", "-")
+            if "IPCA" in s:
+                return "SAC_IPCA"
+            if "SAC" in s and "TR" in s:
+                return "SAC_TR"
+            if "SAC" in s:
+                return "SAC"
+            return None
+
+        tipo = tipo_raw.map(norm_tipo)
+        ok = tipo.notna()
+        if ok.sum() == 0:
+            logger.warning("Sem modalidade reconhecida: %s (ignorado)", f)
+            continue
+
+        def oferta_label(b, t):
+            t_disp = {"SAC": "SAC", "SAC_TR": "SAC TR", "SAC_IPCA": "SAC IPCA+"}.get(t, t)
+            b = str(b).strip()
+            return f"{b} — {t_disp}" if b else t_disp
+
+        out = pd.DataFrame({
+            "Oferta": [oferta_label(b, t) for b, t in zip(banco[ok], tipo[ok])],
+            "Tipo": tipo[ok].values
+        })
+
+        # mantém colunas extras úteis
+        extras = [c for c in df.columns if c not in {
+            "oferta","tipo","modalidade","produto","linha",
+            "banco","instituicao","instituicao_financeira","origem","nome"
+        }]
+        out = pd.concat([out.reset_index(drop=True),
+                         df.loc[ok, extras].reset_index(drop=True)], axis=1)
+        frames.append(out)
+
+    if not frames:
+        logger.warning("Nenhum arquivo válido agregado; caindo em fallback mínimo.")
+        dest_p.write_text("Oferta,Tipo\nBanco A — SAC,SAC\n", encoding="utf-8")
+        return str(dest_p), "Nenhuma fonte válida; mínimo gerado."
+
+    final = pd.concat(frames, ignore_index=True)
+    final = final.drop_duplicates(subset=["Oferta"], keep="first")
+    final.to_csv(dest_p, index=False, encoding="utf-8")
+    logger.info("Agregado %d arquivos → %s (%d linhas)", len(arquivos), dest_p, len(final))
+    return str(dest_p), f"Agregado {len(arquivos)} arquivo(s)."
 # ---------------------------------------------------------------------------
 
 st.set_page_config(page_title="SAD-FI — Comparador", layout="wide")
@@ -109,8 +197,8 @@ with col2:
         fontes.caminho_tr_compat = save_upload(up_tr, fontes.caminho_tr_compat)
         st.success(f"TR salva em: {fontes.caminho_tr_compat}")
 
-    # Botão para gerar/atualizar bancos.csv via template (fallback)
-    if st.button("Atualizar bancos.csv (template/fallback)"):
+    # Botão para gerar/atualizar bancos.csv agregando fontes locais (fallback se vazio)
+    if st.button("Atualizar bancos.csv (agregar fontes locais)"):
         caminho, msgupd = atualizar_bancos_csv(dest=fontes.caminho_bancos)
         fontes.caminho_bancos = caminho
         st.info(msgupd)
@@ -125,7 +213,6 @@ logger.info(
     _file_stat(fontes.caminho_ipca),
     _file_stat(fontes.caminho_tr_compat),
 )
-
 
 run = st.button("Executar comparação")
 
@@ -172,9 +259,8 @@ if run:
 
     # Export CSV de ranking
     out_dir = Path("resultados"); out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "ranking.csv").write_text(
-        df_rank.to_csv(index=False, encoding="utf-8"), encoding="utf-8"
-    )
+    (out_dir / "ranking.csv").parent.mkdir(parents=True, exist_ok=True)
+    df_rank.to_csv(out_dir / "ranking.csv", index=False, encoding="utf-8")
     st.caption(f"CSV salvo em: {out_dir/'ranking.csv'}")
     logger.info("Arquivo salvo: %s", (out_dir / "ranking.csv").resolve())
 
@@ -261,7 +347,7 @@ if run:
     ax_r.set_xlabel("Total Pago")
     ax_r.set_ylabel("Oferta")
 
-    # >>>> ALTERAÇÃO AQUI: salvar PNG ANTES de exibir e NÃO limpar a figura <<<<
+    # Salvar PNG do ranking **antes** de exibir e não limpar a figura
     fig_r.tight_layout()
     fig_r.canvas.draw()
     out_g = out_dir / "graficos"; out_g.mkdir(parents=True, exist_ok=True)
