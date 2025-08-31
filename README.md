@@ -5,17 +5,7 @@ O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparaç�
 
 ## ✨ UI (offline) — Comparação SAC, SAC TR e SAC IPCA
 
-**Objetivo:** executar a comparação a partir de CSVs locais, exibindo ranking, mensagem de recomendação e gráfico do Top-3.
-
-### Pré-requisitos
-- Python 3.10+
-- Dependências:
-```bash
-pip install -r requirements.txt
-# se necessário:
-pip install streamlit matplotlib pandas
-```
----
+Veja [`Como utilziar a UI`](docs/UI.md)
 
 ## Novidades da Sprint 3
 - **Fluxo offline-first consolidado** com dados oficiais do Bacen via CSVs (IPCA e TR), eliminando dependência de rede nas evidências.
