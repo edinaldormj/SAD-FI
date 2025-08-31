@@ -3,7 +3,21 @@
 Este é um projeto de MVP desenvolvido como trabalho final de pós-graduação em Ciência de Dados e Inteligência Artificial.  
 O SAD-FI tem como objetivo auxiliar usuários leigos na simulação e comparação de modalidades de financiamento imobiliário.
 
-## ✨ Novidades da Sprint 3
+## ✨ UI (offline) — Comparação SAC, SAC TR e SAC IPCA
+
+**Objetivo:** executar a comparação a partir de CSVs locais, exibindo ranking, mensagem de recomendação e gráfico do Top-3.
+
+### Pré-requisitos
+- Python 3.10+
+- Dependências:
+```bash
+pip install -r requirements.txt
+# se necessário:
+pip install streamlit matplotlib pandas
+```
+---
+
+## Novidades da Sprint 3
 - **Fluxo offline-first consolidado** com dados oficiais do Bacen via CSVs (IPCA e TR), eliminando dependência de rede nas evidências.
 
 - **ControladorApp.simular_multiplos_bancos**: orquestra simulações em lote, gera ranking por custo total e mensagem de recomendação.
