@@ -51,34 +51,87 @@ def save_upload(uploaded_file, dest_path: str) -> str:
     dest.write_bytes(data)
     return str(dest)
 
-def atualizar_bancos_csv(dest: str = "dados/bancos.csv", fontes_dir: str = "dados/fontes_bancos"):
+def atualizar_bancos_csv(
+    dest: str = "dados/bancos.csv",
+    fontes_dir: str = "dados/fontes_bancos",
+    taxa_default: float = 0.11,  # usa a taxa da UI como fallback
+):
     """
-    Agrega vários CSVs de fontes locais em um único bancos.csv.
-    - Lê todos *.csv em dados/fontes_bancos/
-    - Detecta separador (vírgula/ponto-e-vírgula) e encoding (utf-8; fallback latin1)
-    - Normaliza colunas e modalidade (SAC, SAC_TR, SAC_IPCA)
-    - Gera 'Oferta' = "<Banco> — <Modalidade bonitinha>"
-    Fallback: se não houver arquivos, usa template ou cria mínimo.
+    Agrega *.csv de `dados/fontes_bancos/` em um único bancos.csv com as colunas
+    exigidas pelo leitor: nome, sistema, taxa_anual.
+
+    - Detecta encoding (utf-8; fallback latin1) e separador (',' ou ';').
+    - Normaliza modalidade para {SAC, SAC_TR, SAC_IPCA}.
+    - Converte taxa anual para fração (ex.: '11,5%' -> 0.115).
+    - Fallback: se não houver fontes, cria mínimo com 3 linhas.
+
+    Retorna: (caminho_destino, mensagem_resumo)
     """
+    from io import StringIO
+    import pandas as pd
+
+    def _norm_cols(df):
+        def _nc(c: str) -> str:
+            c = unicodedata.normalize("NFKD", c).encode("ascii", "ignore").decode("ascii")
+            return c.strip().lower().replace("-", "_").replace(" ", "_")
+        df.columns = [_nc(c) for c in df.columns]
+        return df
+
+    def _fix_text(s: str) -> str:
+        if not isinstance(s, str):
+            s = str(s)
+        t = s
+        # tentativas rápidas de corr. de mojibake comuns
+        if "Ã" in t or "Â" in t:
+            try: t = t.encode("latin1").decode("utf-8")
+            except Exception: pass
+        t = unicodedata.normalize("NFC", t)
+        return t.strip()
+
+    def _norm_sistema(x: str) -> str | None:
+        s = (x or "").upper().replace("_", "-")
+        if "IPCA" in s: return "SAC_IPCA"
+        if "SAC" in s and "TR" in s: return "SAC_TR"
+        if "SAC" in s: return "SAC"
+        return None
+
+    def _parse_taxa(v) -> float | None:
+        if v is None: return None
+        if isinstance(v, (int, float)):
+            # já numérico; se >= 1.5 assumimos % e convertemos para fração
+            return float(v)/100.0 if float(v) >= 1.5 else float(v)
+        s = str(v).strip()
+        if not s: return None
+        s = s.replace("%", "").replace("a.a.", "").replace("a.a", "").replace("aa", "")
+        s = s.replace(",", ".")
+        # remove espaços
+        s = "".join(s.split())
+        try:
+            x = float(s)
+            return x/100.0 if x >= 1.5 else x
+        except Exception:
+            return None
+
     src_dir = Path(fontes_dir)
     dest_p = Path(dest); dest_p.parent.mkdir(parents=True, exist_ok=True)
     arquivos = sorted(src_dir.glob("*.csv"))
 
     if not arquivos:
-        # Fallback antigo (template/minimal)
-        template = Path("dados/_templates/bancos.template.csv")
-        if template.exists():
-            dest_p.write_bytes(template.read_bytes())
-            logger.warning("Fallback aplicado (template) → %s", dest_p)
-            return str(dest_p), "Template aplicado (fallback)."
-        minimo = "Oferta,Tipo\nBanco A — SAC,SAC\nBanco B — SAC TR,SAC_TR\nBanco C — SAC IPCA+,SAC_IPCA\n"
-        dest_p.write_text(minimo, encoding="utf-8")
+        # Fallback mínimo compatível com o leitor
+        minimo = pd.DataFrame([
+            {"nome": "Banco A", "sistema": "SAC",      "taxa_anual": taxa_default},
+            {"nome": "Banco B", "sistema": "SAC_TR",   "taxa_anual": taxa_default},
+            {"nome": "Banco C", "sistema": "SAC_IPCA", "taxa_anual": taxa_default},
+        ])
+        minimo.to_csv(dest_p, index=False, encoding="utf-8")
         logger.warning("Fallback aplicado (mínimo gerado) → %s", dest_p)
         return str(dest_p), "CSV mínimo criado (fallback)."
 
-    frames = []
+    linhas = []
+    usados, com_default = 0, 0
+
     for f in arquivos:
-        # tenta utf-8; fallback latin1
+        # encoding
         txt = None
         for enc in ("utf-8", "latin1"):
             try:
@@ -90,75 +143,79 @@ def atualizar_bancos_csv(dest: str = "dados/bancos.csv", fontes_dir: str = "dado
             logger.warning("Ignorado (encoding ilegível): %s", f)
             continue
 
-        # detecta separador
         sep = ";" if txt.count(";") > txt.count(",") else ","
-        df = pd.read_csv(StringIO(txt), sep=sep, engine="python")
-
-        # normaliza nomes de colunas
-        def _norm_col(c: str) -> str:
-            c = unicodedata.normalize("NFKD", c).encode("ascii", "ignore").decode("ascii")
-            c = c.strip().lower().replace("-", "_").replace(" ", "_")
-            return c
-
-        df.columns = [_norm_col(c) for c in df.columns]
-
-        def pick(*cands):
-            for c in cands:
-                if c in df.columns:
-                    return df[c].astype(str)
-            return pd.Series([""] * len(df))
-
-        banco = pick("banco", "instituicao", "instituicao_financeira", "origem", "oferta", "nome")
-        tipo_raw = pick("tipo", "modalidade", "produto", "linha", "modalidade_financiamento")
-
-        # se vazio, tenta deduzir a partir do nome do arquivo
-        tipo_raw = tipo_raw.replace("", f.stem)
-
-        def norm_tipo(s: str) -> str | None:
-            s = (s or "").upper().replace("_", "-")
-            if "IPCA" in s:
-                return "SAC_IPCA"
-            if "SAC" in s and "TR" in s:
-                return "SAC_TR"
-            if "SAC" in s:
-                return "SAC"
-            return None
-
-        tipo = tipo_raw.map(norm_tipo)
-        ok = tipo.notna()
-        if ok.sum() == 0:
-            logger.warning("Sem modalidade reconhecida: %s (ignorado)", f)
+        try:
+            df = pd.read_csv(StringIO(txt), sep=sep, engine="python")
+        except Exception as e:
+            logger.warning("Ignorado (erro de parsing %s): %s", e, f)
             continue
 
-        def oferta_label(b, t):
-            t_disp = {"SAC": "SAC", "SAC_TR": "SAC TR", "SAC_IPCA": "SAC IPCA+"}.get(t, t)
-            b = str(b).strip()
-            return f"{b} — {t_disp}" if b else t_disp
+        df = _norm_cols(df)
 
-        out = pd.DataFrame({
-            "Oferta": [oferta_label(b, t) for b, t in zip(banco[ok], tipo[ok])],
-            "Tipo": tipo[ok].values
-        })
+        # candidatos de nome do banco / instituição
+        nome_series = None
+        for c in ("banco","instituicao","instituicao_financeira","origem","nome","oferta"):
+            if c in df.columns:
+                nome_series = df[c].astype(str).map(_fix_text)
+                break
+        if nome_series is None:
+            # usa o nome do arquivo como última alternativa
+            nome_series = pd.Series([_fix_text(f.stem)] * len(df))
 
-        # mantém colunas extras úteis
-        extras = [c for c in df.columns if c not in {
-            "oferta","tipo","modalidade","produto","linha",
-            "banco","instituicao","instituicao_financeira","origem","nome"
-        }]
-        out = pd.concat([out.reset_index(drop=True),
-                         df.loc[ok, extras].reset_index(drop=True)], axis=1)
-        frames.append(out)
+        # candidatos de modalidade
+        tipo_series = None
+        for c in ("sistema","tipo","modalidade","produto","linha","modalidade_financiamento"):
+            if c in df.columns:
+                tipo_series = df[c].astype(str)
+                break
+        if tipo_series is None:
+            tipo_series = pd.Series([f.stem] * len(df))
 
-    if not frames:
-        logger.warning("Nenhum arquivo válido agregado; caindo em fallback mínimo.")
-        dest_p.write_text("Oferta,Tipo\nBanco A — SAC,SAC\n", encoding="utf-8")
-        return str(dest_p), "Nenhuma fonte válida; mínimo gerado."
+        # taxa anual: tenta várias colunas comuns
+        taxa_cols = [c for c in df.columns if any(k in c for k in
+            ["taxa_anual","taxa_aa","taxa","juros","nominal","base"])]
+        # constroi série de taxa pegando a primeira coluna que renderizar número
+        taxa_series = pd.Series([None]*len(df))
+        for c in taxa_cols:
+            parsed = df[c].map(_parse_taxa)
+            taxa_series = taxa_series.where(taxa_series.notna(), parsed)
 
-    final = pd.concat(frames, ignore_index=True)
-    final = final.drop_duplicates(subset=["Oferta"], keep="first")
+        # normaliza sistema e taxa
+        sistema_series = tipo_series.map(_norm_sistema)
+
+        for nome, sist, taxa in zip(nome_series, sistema_series, taxa_series):
+            if sist is None:
+                continue  # sem modalidade reconhecida, ignora
+            if taxa is None:
+                taxa = float(taxa_default)
+                com_default += 1
+            linhas.append({
+                "nome": _fix_text(nome.split(" — ")[0].split(" - ")[0]),
+                "sistema": sist,
+                "taxa_anual": float(taxa),
+                # colunas auxiliares que não atrapalham o leitor:
+                "Oferta": f"{_fix_text(nome.split(' — ')[0].split(' - ')[0])} — " +
+                          ({"SAC":"SAC","SAC_TR":"SAC TR","SAC_IPCA":"SAC IPCA+"}[sist]),
+                "Tipo": sist,
+            })
+            usados += 1
+
+    if not linhas:
+        logger.warning("Nenhum registro válido agregado; gerando mínimo.")
+        return atualizar_bancos_csv(dest=dest, fontes_dir=fontes_dir, taxa_default=taxa_default)
+
+    final = pd.DataFrame(linhas)
+    final = final.drop_duplicates(subset=["nome","sistema"], keep="first")
     final.to_csv(dest_p, index=False, encoding="utf-8")
-    logger.info("Agregado %d arquivos → %s (%d linhas)", len(arquivos), dest_p, len(final))
-    return str(dest_p), f"Agregado {len(arquivos)} arquivo(s)."
+
+    logger.info(
+        "Agregado %d arquivo(s) → %s (%d linhas; %d com taxa_default=%.4f)",
+        len(arquivos), dest_p, len(final), com_default, taxa_default
+    )
+    msg = f"Agregado {len(arquivos)} arquivo(s). Linhas: {len(final)}"
+    if com_default:
+        msg += f" — {com_default} linha(s) usaram taxa_default={taxa_default:.4f}"
+    return str(dest_p), msg
 # ---------------------------------------------------------------------------
 
 st.set_page_config(page_title="SAD-FI — Comparador", layout="wide")
@@ -199,10 +256,14 @@ with col2:
 
     # Botão para gerar/atualizar bancos.csv agregando fontes locais (fallback se vazio)
     if st.button("Atualizar bancos.csv (agregar fontes locais)"):
-        caminho, msgupd = atualizar_bancos_csv(dest=fontes.caminho_bancos)
+        caminho, msgupd = atualizar_bancos_csv(
+            dest=fontes.caminho_bancos,
+            taxa_default=fin.taxa_juros_anual,  # << usa a taxa da UI como fallback
+        )
         fontes.caminho_bancos = caminho
         st.info(msgupd)
         st.success(f"bancos.csv atualizado em: {caminho}")
+
 
 st.caption(f"Usando bancos: {fontes.caminho_bancos} | IPCA: {fontes.caminho_ipca} | TR: {fontes.caminho_tr_compat}")
 
@@ -213,6 +274,155 @@ logger.info(
     _file_stat(fontes.caminho_ipca),
     _file_stat(fontes.caminho_tr_compat),
 )
+
+
+# === HOTFIX DE SCHEMA PARA bancos.csv ===
+import io, csv, re
+
+def _detect_sep_for_csv(path: str) -> str:
+    try:
+        txt = Path(path).read_text(encoding="utf-8")
+    except Exception:
+        txt = Path(path).read_text(encoding="latin1")
+    return ";" if txt.count(";") > txt.count(",") else ","
+
+_missing_cols_re = re.compile(r"faltam colunas obrigat[oó]rias:\s*\[(.*?)\]", re.IGNORECASE)
+
+def _parse_missing_from_error(err_msg: str) -> list[str]:
+    m = _missing_cols_re.search(err_msg or "")
+    if not m:
+        return []
+    inner = m.group(1)
+    # extrai 'nome', 'sistema', 'taxa_anual' etc.
+    cols = re.findall(r"'([^']+)'|\"([^\"]+)\"", inner)
+    cols = [a or b for (a, b) in cols]
+    # fallback bruto
+    if not cols:
+        cols = [c.strip().strip("'\"") for c in inner.split(",")]
+    return [c for c in (c.strip() for c in cols) if c]
+
+def _norm_modalidade_str(s: str | None) -> str | None:
+    s = (s or "").upper().replace("_", "-")
+    if "IPCA" in s: return "SAC_IPCA"
+    if "SAC" in s and "TR" in s: return "SAC_TR"
+    if "SAC" in s: return "SAC"
+    return None
+
+def _parse_taxa_to_frac(v) -> float | None:
+    if v is None: return None
+    if isinstance(v, (int, float)):
+        return float(v)/100.0 if float(v) >= 1.5 else float(v)
+    s = str(v).strip()
+    if not s: return None
+    s = (s.replace("%","").replace("a.a.","").replace("a.a","")
+           .replace("aa","").replace(",", "."))
+    s = "".join(s.split())
+    try:
+        x = float(s)
+        return x/100.0 if x >= 1.5 else x
+    except Exception:
+        return None
+
+def _ensure_bancos_schema(bancos_path: str, required_cols: list[str], taxa_default: float) -> None:
+    """Garante que bancos.csv tenha as colunas exigidas pelo leitor (criando/renomeando se preciso)."""
+    sep = _detect_sep_for_csv(bancos_path)
+    # tenta utf-8; fallback latin1
+    import pandas as pd, unicodedata as _ud
+    def _read(p, enc):
+        return pd.read_csv(p, sep=sep, engine="python", encoding=enc)
+    try:
+        df = _read(bancos_path, "utf-8")
+    except Exception:
+        df = _read(bancos_path, "latin1")
+
+    # normaliza cabeçalhos
+    def _nc(c: str) -> str:
+        c = _ud.normalize("NFKD", str(c)).encode("ascii","ignore").decode("ascii")
+        return c.strip().lower().replace("-", "_").replace(" ", "_")
+    df.columns = [_nc(c) for c in df.columns]
+
+    # mapear sinônimos -> campos-alvo
+    # alvo provável do leitor: 'nome', 'sistema', 'taxa_anual'
+    # (se o leitor pedir nomes diferentes, usamos a lista `required_cols`)
+    synonyms = {
+        "nome": ["nome","banco","instituicao","instituicao_financeira","origem","oferta"],
+        "sistema": ["sistema","tipo","modalidade","produto","linha","modalidade_financiamento","Tipo"],
+        "taxa_anual": ["taxa_anual","taxa_aa","taxa","juros","nominal","base","taxa_juros_anual"],
+    }
+
+    # cria colunas ausentes a partir de sinônimos
+    if "nome" not in df.columns:
+        for cand in synonyms["nome"]:
+            if cand in df.columns:
+                df["nome"] = df[cand]
+                break
+        if "nome" not in df.columns:
+            # tenta derivar de 'Oferta' se existir na forma original (case-insensitive)
+            # ou usa nome genérico
+            if "oferta" in df.columns and df["oferta"].notna().any():
+                df["nome"] = df["oferta"].astype(str).str.split(r"\s+[—-]\s+", regex=True).str[0]
+            else:
+                df["nome"] = "Banco"
+
+    if "sistema" not in df.columns:
+        for cand in synonyms["sistema"]:
+            if cand in df.columns:
+                df["sistema"] = df[cand]
+                break
+        if "sistema" not in df.columns:
+            df["sistema"] = ""
+
+    df["sistema"] = df["sistema"].map(_norm_modalidade_str)
+
+    if "taxa_anual" not in df.columns:
+        for cand in synonyms["taxa_anual"]:
+            if cand in df.columns:
+                df["taxa_anual"] = df[cand].map(_parse_taxa_to_frac)
+                break
+        if "taxa_anual" not in df.columns:
+            df["taxa_anual"] = None
+
+    # completa faltantes com defaults
+    df["nome"] = df["nome"].fillna("Banco").astype(str)
+    df["sistema"] = df["sistema"].fillna("")
+    df["taxa_anual"] = df["taxa_anual"].map(lambda x: taxa_default if (x is None or (isinstance(x,float) and x!=x)) else x)
+
+    # filtra linhas válidas (precisa de sistema reconhecido)
+    df_ok = df[df["sistema"].isin(["SAC","SAC_TR","SAC_IPCA"])].copy()
+    if df_ok.empty:
+        # se vazio, cria mínimo válido
+        df_ok = pd.DataFrame([
+            {"nome":"Banco A","sistema":"SAC","taxa_anual":taxa_default},
+            {"nome":"Banco B","sistema":"SAC_TR","taxa_anual":taxa_default},
+            {"nome":"Banco C","sistema":"SAC_IPCA","taxa_anual":taxa_default},
+        ])
+
+    # se o leitor pediu nomes diferentes de 'nome/sistema/taxa_anual', alinhe-os
+    rename_map = {}
+    target_set = set(required_cols) if required_cols else {"nome","sistema","taxa_anual"}
+    std_to_target = {
+        "nome": next((c for c in required_cols if c.lower() in {"nome","banco"}), "nome") if required_cols else "nome",
+        "sistema": next((c for c in required_cols if c.lower() in {"sistema","tipo"}), "sistema") if required_cols else "sistema",
+        "taxa_anual": next((c for c in required_cols if "taxa" in c.lower()), "taxa_anual") if required_cols else "taxa_anual",
+    }
+    for k,std in [("nome","nome"),("sistema","sistema"),("taxa_anual","taxa_anual")]:
+        tgt = std_to_target[std]
+        if std != tgt:
+            rename_map[std] = tgt
+
+    df_ok = df_ok.rename(columns=rename_map)
+
+    # mantém apenas colunas necessárias + extras não conflituosas
+    needed = list(target_set) if required_cols else ["nome","sistema","taxa_anual"]
+    extras = [c for c in df_ok.columns if c not in needed]
+    df_ok = df_ok[needed + extras]
+
+    # salva de volta como UTF-8 com vírgula
+    df_ok.to_csv(bancos_path, index=False, encoding="utf-8")
+    logger.warning("bancos.csv foi ajustado para conter colunas obrigatórias: %s", needed)
+# === FIM HOTFIX ===
+
+
 
 run = st.button("Executar comparação")
 
@@ -226,17 +436,42 @@ if run:
         fin.valor_total, fin.entrada, fin.prazo_anos, fin.taxa_juros_anual
     )
 
-    resultados, ranking, msg = ControladorApp().simular_multiplos_bancos(
-        caminho_bancos_csv=fontes.caminho_bancos,
-        dados_financiamento={
-            "valor_total": fin.valor_total,
-            "entrada": fin.entrada,
-            "prazo_anos": fin.prazo_anos,
-            "taxa_juros_anual": fin.taxa_juros_anual,
-        },
-        fonte_ipca=fonte_ipca,
-        fonte_tr=fonte_tr,
-    )
+    try:
+        resultados, ranking, msg = ControladorApp().simular_multiplos_bancos(
+            caminho_bancos_csv=fontes.caminho_bancos,
+            dados_financiamento={
+                "valor_total": fin.valor_total,
+                "entrada": fin.entrada,
+                "prazo_anos": fin.prazo_anos,
+                "taxa_juros_anual": fin.taxa_juros_anual,
+            },
+            fonte_ipca={"caminho_ipca": fontes.caminho_ipca},
+            fonte_tr={"fixture_csv_path": fontes.caminho_tr_compat},
+        )
+    except ValueError as e:
+        err = str(e)
+        missing = _parse_missing_from_error(err)
+        logger.error("Falha ao carregar bancos.csv: %s", err)
+        if missing:
+            # tenta corrigir e rodar de novo
+            _ensure_bancos_schema(fontes.caminho_bancos, missing, fin.taxa_juros_anual)
+            logger.info("Tentando novamente após corrigir colunas ausentes: %s", missing)
+            resultados, ranking, msg = ControladorApp().simular_multiplos_bancos(
+                caminho_bancos_csv=fontes.caminho_bancos,
+                dados_financiamento={
+                    "valor_total": fin.valor_total,
+                    "entrada": fin.entrada,
+                    "prazo_anos": fin.prazo_anos,
+                    "taxa_juros_anual": fin.taxa_juros_anual,
+                },
+                fonte_ipca={"caminho_ipca": fontes.caminho_ipca},
+                fonte_tr={"fixture_csv_path": fontes.caminho_tr_compat},
+            )
+        else:
+            # sem dica das colunas, exibe erro amigável e aborta
+            st.error(f"Erro ao ler bancos.csv: {err}")
+            raise
+
 
     st.subheader("Ranking")
     df_rank = pd.DataFrame(ranking, columns=["Oferta", "Total Pago"])

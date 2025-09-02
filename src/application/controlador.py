@@ -205,7 +205,7 @@ class ControladorApp:
                 tabela_ipca.tabela = pd.concat([tabela_ipca.tabela, pad], ignore_index=True)
 
         # --- TR (uma vez) ---
-        tr_series = None  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< (novo)
+        tr_series = None  
         tabela_tr = self._carregar_tabela_tr(fonte_tr, exige_tr)
         if tabela_tr is not None and getattr(tabela_tr, "df", None) is not None and "tr" in tabela_tr.df.columns:
             tr_series = tabela_tr.df["tr"].tolist()
@@ -214,12 +214,18 @@ class ControladorApp:
         for b in bancos:
             nome = b["nome"].strip()
             sistema = b["sistema"].upper().strip()
-            taxa = float(b["taxa_anual"])
+            taxa_csv = float(b["taxa_anual"])
 
-            fin = self._montar_financiamento(dados_financiamento, sistema, taxa)
+            fin = self._montar_financiamento(dados_financiamento, sistema, taxa_csv)
+
+            # log de transparência:
+            taxa_user = dados_financiamento.get("taxa_juros_anual")
+            if taxa_user is not None and abs(taxa_user - taxa_csv) > 1e-9:
+                logger.info("Ignorando taxa_juros_anual de dados_financiamento (%.4f); usando taxa do CSV para %s: %.4f", 
+                             taxa_user, nome, taxa_csv)
 
             if sistema == "SAC":
-                resultado = SimuladorSAC(fin, taxa).simular()
+                resultado = SimuladorSAC(fin, taxa_csv).simular()
                 rotulo = f"{nome} – SAC"
 
             elif sistema == "SAC_IPCA":
@@ -232,7 +238,7 @@ class ControladorApp:
                 # garante que tr_series existe e tem conteúdo
                 if tr_series is None or len(tr_series) == 0:
                     raise RuntimeError("TR não carregada (tr_series vazio).")
-                resultado = SimuladorSAC(fin, taxa).simular(usar_tr=True, tr_series=tr_series)
+                resultado = SimuladorSAC(fin, taxa_csv).simular(usar_tr=True, tr_series=tr_series)
                 rotulo = f"{nome} – SAC TR"
 
             else:
