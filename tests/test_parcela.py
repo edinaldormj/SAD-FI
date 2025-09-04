@@ -35,5 +35,7 @@ print("📊 Teste 5 – Valores zero:", parcela_zero)
 assert parcela_zero == Parcela(3, 0.00, 0.00, 0.00, 0.00)
 
 print("✅ Todos os testes passaram com sucesso!")
-input("Pressione Enter para sair...")
+if __name__ == "__main__":
+    input("Pressione Enter para sair...")
+
 
