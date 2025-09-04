@@ -1,0 +1,129 @@
+@startuml SADFI_Estados_Atualizado_v2
+' SAD-FI — Diagrama de Estados (Simulação de Financiamento) - versão corrigida
+
+skinparam defaultFontName Arial
+skinparam stateFontSize 12
+skinparam shadowing false
+
+[*] --> Idle
+
+state Idle {
+  note left
+    Sistema aguardando acoes do usuario
+    (Upload CSV, preencher formulario)
+  end note
+}
+Idle --> AwaitingInput : user_initiates_simulation / click "Simular"
+
+state AwaitingInput {
+  note left
+    carregar_form_defaults()
+  end note
+}
+AwaitingInput --> ValidatingInput : submit(dados_financiamento, path_bancos)
+AwaitingInput --> Idle : cancel
+
+state ValidatingInput {
+  note left
+    validar_schema_bancos()
+    validar_campos_financiamento()
+  end note
+}
+ValidatingInput --> LoadingData : validation_ok
+ValidatingInput --> Error : validation_failed / show_errors
+
+state LoadingData {
+  note right
+    iniciar coletores
+    Preferencia por fontes online (BACEN)
+    fallback para CSV local (dados/ipca.csv, dados/tr.csv)
+  end note
+}
+LoadingData --> DataLoaded : data_ok
+LoadingData --> Error : data_unavailable
+
+state DataLoaded {
+  note left
+    instanciar tabelas: TabelaIPCA, TabelaTR
+  end note
+}
+DataLoaded --> Simulations : start_simulations()
+
+state Simulations {
+  note left
+    Estado composto — executa simulacao para cada banco (loop)
+  end note
+
+  state "Simulacao por Banco" as PerBank {
+    note left
+      selecionar proxima conta; executar simulacao para o banco atual
+    end note
+    PerBank --> PerBank : has_next_bank [simular_proximo]
+    PerBank --> SimulationComplete : no_more_banks
+    PerBank --> Error : simulation_error
+  }
+
+  state SimulationComplete {
+    note left
+      agregar resultados por banco
+    end note
+    SimulationComplete --> AggregatingResults
+  }
+
+  Simulations --> AggregatingResults : all_done
+}
+
+state AggregatingResults {
+  note left
+    construir dicionario de resultados (por banco)
+  end note
+}
+AggregatingResults --> Comparing : ready_to_compare
+
+state Comparing {
+  note left
+    executar comparador(); gerar recomendacao
+  end note
+}
+Comparing --> Exporting : comparison_ok
+Comparing --> Error : comparison_failed
+
+state Exporting {
+  note left
+    exportar CSV; salvar arquivos de resultado
+  end note
+}
+Exporting --> RenderingPlots : export_ok
+Exporting --> Error : export_failed
+
+state RenderingPlots {
+  note left
+    gerar plots; salvar imagens (png)
+  end note
+}
+RenderingPlots --> Completed : plots_ready
+RenderingPlots --> Error : plotting_failed
+
+state Completed {
+  note left
+    retornar links e mensagem para a UI
+  end note
+}
+Completed --> Idle : novo_pedido
+
+state Error {
+  note left
+    registrar log(); notificar UI (error_details)
+  end note
+}
+Error --> Idle : recover_or_new_request
+Error --> AwaitingInput : retry_after_fix
+
+note bottom
+  Observacoes:
+  - Timeouts/retries implementados nos coletores.
+  - AntecipadorParcelas eh opcional e invocado dentro das simulacoes quando solicitado.
+  - Estado composto 'Simulations' modela o loop por bancos e permite rollback parcial em caso de falha.
+end note
+
+@enduml

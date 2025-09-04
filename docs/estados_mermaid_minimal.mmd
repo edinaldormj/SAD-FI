@@ -1,0 +1,42 @@
+stateDiagram-v2
+    %% SAD-FI — Minimal Mermaid state diagram (no notes, compatible)
+
+    [*] --> Idle
+    Idle --> AwaitingInput: user_clicks_simulate
+
+    AwaitingInput --> ValidatingInput: submit_data
+    AwaitingInput --> Idle: cancel
+
+    ValidatingInput --> LoadingData: validation_ok
+    ValidatingInput --> Error: validation_failed
+
+    LoadingData --> DataLoaded: data_ok
+    LoadingData --> Error: data_unavailable
+
+    DataLoaded --> Simulations: start_simulations
+
+    state Simulations {
+        [*] --> PerBank
+
+        PerBank --> PerBank: has_next_bank / simulate_next
+        PerBank --> SimulationComplete: no_more_banks
+        PerBank --> Error: simulation_error
+
+        SimulationComplete --> AggregatingResults: aggregated
+    }
+
+    AggregatingResults --> Comparing: ready_to_compare
+
+    Comparing --> Exporting: comparison_ok
+    Comparing --> Error: comparison_failed
+
+    Exporting --> RenderingPlots: export_ok
+    Exporting --> Error: export_failed
+
+    RenderingPlots --> Completed: plots_ready
+    RenderingPlots --> Error: plotting_failed
+
+    Completed --> Idle: new_request
+
+    Error --> Idle: recover_or_new_request
+    Error --> AwaitingInput: retry_after_fix

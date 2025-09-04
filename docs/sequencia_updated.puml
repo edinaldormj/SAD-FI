@@ -1,0 +1,23 @@
+@startuml SADFI_Sequencia_Atualizado
+title SAD-FI — Diagrama de Sequência (Fluxo: UI → Controlador → Simuladores → Exportação)
+
+skinparam sequenceParticipantPadding 10
+skinparam defaultFontName Arial
+left to right direction
+
+actor User as "Usuário"
+participant "UIApp\n(Presentation)" as UIApp
+participant "ControladorApp\n(Application)" as ControladorApp
+participant "LeitorBancos\n(Infrastructure-Data)" as LeitorBancos
+database "CSV Storage\n(dados e resultados)" as CSVStore
+participant "ColetorBACEN\n(Infrastructure-Data)" as ColetorBACEN
+participant "ColetorTR\n(Infrastructure-Data)" as ColetorTR
+participant "TabelaIPCA\n(Infrastructure-Data)" as TabelaIPCA
+participant "TabelaTR\n(Infrastructure-Data)" as TabelaTR
+participant "SimuladorSAC\n(Domain)" as SimuladorSAC
+participant "SimuladorSAC_IPCA\n(Domain)" as SimuladorSAC_IPCA
+participant "ComparadorModalidades\n(Domain)" as Comparador
+participant "ExportadorCSV\n(Infrastructure-Data)" as Exportador
+participant "PlotUtils\n(Presentation)" as PlotUtils
+
+@enduml

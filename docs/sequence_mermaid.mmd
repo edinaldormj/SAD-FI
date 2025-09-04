@@ -1,0 +1,79 @@
+sequenceDiagram
+    title SAD-FI — Sequence (UI -> Controller -> Simulators -> Export)
+
+    participant User as User
+    participant UIApp as UIApp (Presentation)
+    participant Controller as ControladorApp (Application)
+    participant BanksReader as LeitorBancos (Infra)
+// [MermaidChart: 23fbdc0a-4efb-4062-8fd8-d6180ea092dc]
+    participant CSVStore as CSV Storage
+    participant ColetorIPCA as ColetorBACEN (Infra)
+    participant ColetorTR as ColetorTR (Infra)
+    participant TableIPCA as TabelaIPCA (Infra)
+    participant TableTR as TabelaTR (Infra)
+    participant SimSAC as SimuladorSAC (Domain)
+    participant SimIPCA as SimuladorSAC_IPCA (Domain)
+    participant Comparator as Comparador (Domain)
+    participant Exporter as ExportadorCSV (Infra)
+    participant PlotUtils as PlotUtils (Presentation)
+
+    User->>UIApp: enviar pedido (bancos.csv?, financiamento)
+    UIApp->>Controller: simular_multiplos_bancos(path, financiamento, fontes)
+
+    Controller->>BanksReader: carregar_bancos_csv(path)
+    BanksReader-->>Controller: lista_bancos (ok / template / error)
+
+    Controller->>ColetorIPCA: solicitar_ipca(n_meses) (online preferred)
+    alt BACEN online
+        ColetorIPCA-->>Controller: ipca_df
+        Controller->>TableIPCA: from_dataframe(ipca_df)
+        TableIPCA-->>Controller: tabela_ipca
+    else fallback to CSV
+        Controller->>CSVStore: read ipca.csv
+        CSVStore-->>Controller: ipca_df_local
+        Controller->>TableIPCA: from_dataframe(ipca_df_local)
+        TableIPCA-->>Controller: tabela_ipca
+    end
+
+    Controller->>ColetorTR: solicitar_tr(periodo) (online preferred)
+    alt BACEN online
+        ColetorTR-->>Controller: tr_df
+        Controller->>TableTR: from_dataframe(tr_df)
+        TableTR-->>Controller: tabela_tr
+    else fallback to CSV
+        Controller->>CSVStore: read tr.csv
+        CSVStore-->>Controller: tr_df_local
+        Controller->>TableTR: from_dataframe(tr_df_local)
+        TableTR-->>Controller: tabela_tr
+    end
+
+    loop para cada banco em lista_bancos
+        alt banco.sistema == "SAC" or "SAC_TR"
+            Controller->>SimSAC: simular(financiamento, usar_tr?)
+            alt uses TR
+                SimSAC->>TableTR: taxa_mensal(ano_mes)
+                TableTR-->>SimSAC: valor_tr
+            end
+            SimSAC-->>Controller: SimulacaoResultado
+        end
+        alt banco.sistema == "SAC_IPCA"
+            Controller->>SimIPCA: simular(financiamento, tabela_ipca)
+            SimIPCA->>TableIPCA: get_ipca(ano_mes)
+            TableIPCA-->>SimIPCA: ipca_valor
+            SimIPCA-->>Controller: SimulacaoResultado
+        end
+    end
+
+    Controller->>Comparator: comparar_varios(resultados)
+    Comparator-->>Controller: ranking, recomendacao
+
+    Controller->>Exporter: exportar_cronograma_csv(todos_df, nome_base)
+    Exporter->>CSVStore: gravar arquivo
+    CSVStore-->>Exporter: caminho
+    Exporter-->>Controller: caminho_arquivo
+
+    Controller->>PlotUtils: gerar_plots(resultado_vencedor)
+    PlotUtils-->>UIApp: imagens/plots
+
+    Controller-->>UIApp: retorna (ranking, mensagem, caminhos)
+    UIApp-->>User: mostrar ranking, mensagem e links

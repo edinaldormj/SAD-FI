@@ -61,9 +61,10 @@ Para manter rastreabilidade entre código e documentação, os principais diagra
 | Tipo        | Arquivo                                                                                  | Descrição                                                                 |
 |-------------|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | Camadas     | [`Arquitetura Conceitual`](docs/out/docs/camadas/SADFI_Camadas_Sprint2_Simples_Clean.png) | Visão simples das camadas e suas relações.                                 |
-| Classes     | [`Diagrama de Classes`](docs/out/docs/classes/classes_Sprint2_rev_parcela.png) | Classes atualizadas com TR opcional, vínculos corretos e atributos extras. |
-| Estados     | [`Diagrama de Estados`](docs/out/docs/estados/SADFI_Estados_Sprint2_Linear.png)             | Fluxo linear e claro, com início e fim explícitos.                         |
-| Sequência   | [`Diagrama de Sequência`](docs/out/docs/sequencia/SADFI_Sequencia_Sprint2_Rev_Fix.png)     | Fluxo de mensagens, com parâmetros de TR explícitos e exportação opcional. |
+| Classes     | [`Diagrama de Classes`](docs/out/docs/classes_updated/SADFI_Classes_Atualizado.png) | Diagrama de Classes atualizado até a entrega do MVP. |
+| Estados     | [`Diagrama de Estados`](docs/out/docs/estados_updated/estados_updated_mermaid.png)             | Diagrama de Estados atualizado até a entrega do MVP.  |
+| Sequência   | [`Diagrama de Sequência`](docs/out/docs/sequencia_updated/sequencia_updated_mermaid.png)     | Diagrama de Sequência atualizado até a entrega do MVP. |
+| Componentes | [`Diagrama de Componentes`](docs/out/docs/componentes/SADFI_Componentes.png)     | Acréscimo do Diagrama de Componentes na Sprint 3 para enriquecer o entendimento. |
 | Contexto    | [`Contexto Sprint 3`](docs/out/docs/contexto_sprint3/Contexto_SAD-FI_Sprint3.png)     | Visão do fluxo offline-first, fontes (CSVs Bacen), Controlador, Notebook e Testes. |
 
 ---
@@ -161,10 +162,10 @@ Projeto acadêmico sem fins comerciais.
 
 |  # | Título da Issue                                                | Etiquetas                            | Prioridade | Status | Milestone |
 | -: | -------------------------------------------------------------- | ------------------------------------ | ---------: | :----: | :-------: |
-| 29 | task: **Docs, Diagramas e Evidências (finalização)**           | 🟩 Documentação                      |       must |    ⏳   |  Sprint 3 |
-| 30 | task: **UI mínima / CLI (fallback)**                           | 🟩 Documentação, 🟨 Visualização     |     should |    ⭕   |  Sprint 3 |
+| 29 | task: **Docs, Diagramas e Evidências (finalização)**           | 🟩 Documentação                      |       must |    ✅   |  Sprint 3 |
+| 30 | task: **UI mínima / CLI (fallback)**                           | 🟩 Documentação, 🟨 Visualização     |     should |    ✅   |  Sprint 3 |
 | 31 | test: **Testes unitários e integração (Sprint 3)**             | 🟪 Testes                            |       must |    ✅   |  Sprint 3 |
-| 32 | task: **Notebook — adaptar para consumir API do Controlador**  | 🟨 Visualização                      |       must |    ⏳   |  Sprint 3 |
+| 32 | task: **Notebook — adaptar para consumir API do Controlador**  | 🟨 Visualização                      |       must |    ✅   |  Sprint 3 |
 | 33 | feat: **Controlador — simular\_multiplos\_bancos**             | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
 | 34 | feat: **Comparador (multi) — comparar\_varios + recomendar**   | 🟦 Técnica                           |       must |    ✅   |  Sprint 3 |
 | 35 | feat: **Coletor BACEN 433 (stub + offline fixture)**           | 🟦 Técnica                           |     should |    ✅   |  Sprint 3 |

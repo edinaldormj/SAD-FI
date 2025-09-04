@@ -1,0 +1,185 @@
+@startuml SADFI_Classes_Atualizado
+
+'--- estilo ---'
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Arial"
+skinparam packageStyle rectangle
+
+' =================== Presentation =================== '
+package "Presentation" as Presentation {
+  class UIApp <<controller>> {
+    + executar_interface()
+    + carregar_fontes()
+    + chamar_simulacao(dados_financiamento, fontes)
+  }
+
+  class FinanciamentoInput <<dto>> {
+    + valor_total: float
+    + entrada: float
+    + prazo_anos: int
+    + taxa_juros_anual: float
+  }
+
+  class PlotUtils <<util>> {
+    + plot_ranking(df)
+    + plot_top3(resultados, top3)
+  }
+}
+
+' =================== Application =================== '
+package "Application" as Application {
+  class ControladorApp <<controller>> {
+    - comparador: ComparadorModalidades
+    + executar_simulacao(dados_entrada: dict) : SimulacaoResultado
+    + simular_multiplos_bancos(caminho_bancos_csv, dados_financiamento, fonte_ipca=None, fonte_tr=None) : (dict, list, str)
+    + exportar_resultado(simulacao_resultado, nome_base) : str
+  }
+
+  class AppComparador <<service>> {
+    + comparar_varios(resultados: dict) : list
+    + recomendar(ranking:list, modalidades:dict) : str
+    + mapear_modalidades(chaves:list) : dict
+  }
+}
+
+' =================== Domain =================== '
+package "Domain" as Domain {
+  class Financiamento <<entity>> {
+    - valor_total: float
+    - entrada: float
+    - prazo_anos: int
+    - sistema: str
+    - taxa_juros_anual: float
+    + valor_financiado() : float
+    + taxa_base_mensal() : float
+  }
+
+  class Parcela <<value>> {
+    - numero: int
+    - amortizacao: float
+    - juros: float
+    - valor_total: float
+    - saldo_devedor: float
+    + __repr__(): str
+  }
+
+  class SimulacaoResultado <<entity>> {
+    - parcelas: list[Parcela]
+    - total_pago: float
+    - total_juros: float
+    + to_dataframe() : DataFrame
+    + resumo_financeiro() : dict
+  }
+
+  class SimuladorSAC <<service>> {
+    - financiamento: Financiamento
+    - taxa_juros_anual: float
+    + simular(usar_tr: bool=False, tr_series: list=None) : SimulacaoResultado
+  }
+
+  class SimuladorSAC_IPCA <<service>> {
+    - financiamento: Financiamento
+    - tabela_ipca: TabelaIPCA
+    + simular() : SimulacaoResultado
+  }
+
+  class ComparadorModalidades <<service>> {
+    + comparar(resultado1: SimulacaoResultado, resultado2: SimulacaoResultado) : str
+  }
+
+  class RecomendadorModalidade <<service>> {
+    + recomendar(dados: dict) : str
+  }
+
+  class AntecipadorParcelas <<service>> {
+    + antecipar(simulacao: SimulacaoResultado, parcelas: list) : SimulacaoResultado
+    ' TODO: implementar lógica de antecipação'
+  }
+}
+
+' =================== Infrastructure / Data =================== '
+package "Infrastructure::Data" as Infra {
+  class TabelaIPCA <<service>> {
+    - tabela: DataFrame
+    + __init__(caminho_csv: str)
+    + from_dataframe(df) : TabelaIPCA
+    + get_ipca(mes:int) : float
+  }
+
+  class TabelaTR <<service>> {
+    - _df: DataFrame
+    - _cache: dict
+    + from_dataframe(df) : TabelaTR
+    + taxa_mensal(ano_mes:str) : float
+    + df() : DataFrame
+  }
+
+  class ColetorBACEN <<service>> {
+    + obter_ipca_df(meses:int) : DataFrame
+  }
+
+  class ColetorTR <<service>> {
+    + coletar(inicio=None, fim=None, online:bool=False) : DataFrame
+  }
+
+  class ColetorTxJuros <<service>> {
+    + coletar() : DataFrame
+  }
+
+  class LeitorBancos <<util>> {
+    + carregar_bancos_csv(path) : list[dict]
+  }
+
+  class ExportadorCSV <<util>> {
+    + exportar_cronograma_csv(df, nome_base) : str
+  }
+
+  class LeitorCSV <<util>> {
+    + ler_csv(caminho) : DataFrame
+  }
+}
+
+' =================== Relacionamentos / Dependências =================== '
+' Presentation -> Application '
+UIApp --> ControladorApp : usa / chama
+UIApp --> FinanciamentoInput : popula
+
+' Presentation -> Domain (visualização) '
+UIApp --> PlotUtils : usa
+PlotUtils --> SimulacaoResultado : consome (to_dataframe)
+
+' Application -> Domain '
+ControladorApp --> Financiamento : monta instancia
+ControladorApp --> SimuladorSAC : instancia / orquestra
+ControladorApp --> SimuladorSAC_IPCA : instancia / orquestra
+ControladorApp --> ComparadorModalidades : usa
+ControladorApp --> RecomendadorModalidade : usa
+ControladorApp --> SimulacaoResultado : produz
+
+' Application -> Infrastructure '
+ControladorApp --> LeitorBancos : usa
+ControladorApp --> TabelaIPCA : carrega via ColetorBACEN ou CSV
+ControladorApp --> TabelaTR : carrega via ColetorTR
+ControladorApp --> ExportadorCSV : usa
+
+' Domain -> Infrastructure '
+SimuladorSAC_IPCA --> TabelaIPCA : consulta get_ipca
+SimuladorSAC --> TabelaTR : consulta taxa_mensal (quando usar TR)
+ColetorBACEN ..> TabelaIPCA : popula / transforma
+ColetorTR ..> TabelaTR : popula / transforma
+
+' Observações visuais '
+note right of SimuladorSAC
+  suporta SAC puro e SAC+TR,
+  gera SimulacaoResultado com Parcela(s).
+end note
+
+note right of TabelaIPCA
+  possui from_dataframe para aceitar DataFrame vindo do coletor.
+end note
+
+note left of AntecipadorParcelas
+  Implementação pendente: marcado como TODO.
+end note
+
+@enduml

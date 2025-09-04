@@ -133,5 +133,6 @@ if run:
     # Gráfico Top-3
     st.subheader("Evolução do valor da parcela — Top 3")
     fig_t3 = plot_top3(resultados, ranking[:3])
+   
     st.pyplot(fig_t3, clear_figure=True)
     

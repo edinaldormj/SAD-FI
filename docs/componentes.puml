@@ -1,0 +1,84 @@
+@startuml SADFI_Componentes
+
+skinparam defaultFontName Arial
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title SAD-FI — Diagrama de Componentes (infraestrutura e fluxos online/offline)
+
+left to right direction
+
+' External systems '
+actor "BACEN (SGS / OData)" as BACEN
+database "CSV Storage\n(dados/, resultados/)" as CSVStore
+
+package "Presentation" {
+  [UIApp] <<component>>
+  [PlotUtils] <<component>>
+}
+
+package "Application" {
+  [ControladorApp] <<component>> 
+}
+
+package "Domain" {
+  [SimuladorSAC] <<component>> 
+  [SimuladorSAC_IPCA] <<component>> 
+  [ComparadorModalidades] <<component>> 
+}
+
+package "Infrastructure::Data" {
+  [ColetorBACEN] <<service>>
+  [ColetorTR] <<service>>
+  [ColetorTxJuros] <<service>>
+  [TabelaIPCA] <<component>>
+  [TabelaTR] <<component>>
+  [LeitorBancos] <<component>>
+  [ExportadorCSV] <<component>>
+  [LeitorCSV] <<component>>
+}
+
+' Relationships - primary flows '
+UIApp --> ControladorApp : request simulation (bancos.csv, financiamento)
+ControladorApp --> LeitorBancos : carregar/validar CSV
+ControladorApp --> ColetorBACEN : solicitar IPCA (online) 
+ControladorApp --> ColetorTR : solicitar TR (online)
+ControladorApp --> TabelaIPCA : usar lookup (get_ipca)
+ControladorApp --> TabelaTR : usar lookup (taxa_mensal)
+ControladorApp --> SimuladorSAC : executar simulação (SAC / SAC+TR)
+ControladorApp --> SimuladorSAC_IPCA : executar simulação (SAC+IPCA)
+SimuladorSAC_IPCA --> TabelaIPCA : consulta dados IPCA
+SimuladorSAC --> TabelaTR : consulta TR (quando aplicável)
+ControladorApp --> ComparadorModalidades : ranking / recomendação
+ControladorApp --> ExportadorCSV : gravar resultados
+
+' Offline fallback flows '
+ColetorBACEN --> CSVStore : grava backup CSV (ipca.csv)
+ColetorTR --> CSVStore : grava backup CSV (tr.csv)
+LeitorBancos --> CSVStore : lê bancos.csv (fallback)
+ControladorApp ..> CSVStore : fallback read/write (dashed)
+
+' External system relation '
+ColetorBACEN --> BACEN : HTTP / OData
+ColetorTR --> BACEN : HTTP / OData
+ColetorTxJuros --> BACEN : HTTP / OData
+
+' Notes and constraints '
+note right of ColetorBACEN
+  Coletor implementa retries, paginação e
+  normalização. Retorna DataFrame para TabelaIPCA.
+end note
+
+note right of ControladorApp
+  Orquestra fluxo: decide usar fontes online ou CSV local.
+  Retorna ranking e arquivos exportados.
+end note
+
+legend right
+  |= Símbolo |= Descrição |
+  |<<service>>| Serviço externo / coletor (I/O) |
+  |<<component>>| Componente interno (classe/serviço) |
+  |CSVStore| Armazenamento local (CSV) |
+endlegend
+
+@enduml

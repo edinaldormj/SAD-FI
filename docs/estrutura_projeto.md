@@ -68,6 +68,7 @@ Exemplos:
 Inclui notebooks Jupyter utilizados para visualizações e validação dos simuladores.  
 Exemplo:
 - `01_visualizacao_simulacao.ipynb`
+- `02_visualizacao_simulacao_controlador.ipynb`
 
 ---
 
