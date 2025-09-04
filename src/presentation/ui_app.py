@@ -8,6 +8,7 @@ if str(SRC) not in sys.path:
 
 import streamlit as st
 import pandas as pd
+import requests
 from application.controlador import ControladorApp
 from presentation.ui_state import FinanciamentoInput, FontesInput
 from presentation.formatters import brl
@@ -77,8 +78,11 @@ if run:
     logger.info("Exec | valor_total=%.2f, entrada=%.2f, prazo_anos=%d, taxa_juros_anual=%.4f",
                 fin.valor_total, fin.entrada, fin.prazo_anos, fin.taxa_juros_anual)
 
-    try:
-        resultados, ranking, msg = ControladorApp().simular_multiplos_bancos(
+    controlador = ControladorApp()
+
+    # Função utilitária para chamar a simulação (evita duplicar código)
+    def _call_simulation():
+        return controlador.simular_multiplos_bancos(
             caminho_bancos_csv=fontes.caminho_bancos,
             dados_financiamento={
                 "valor_total": fin.valor_total,
@@ -89,50 +93,84 @@ if run:
             fonte_ipca={"caminho_ipca": fontes.caminho_ipca},
             fonte_tr={"fixture_csv_path": fontes.caminho_tr_compat},
         )
+
+    try:
+        # Exibe spinner durante a simulação
+        with st.spinner("Simulação em andamento… isso pode levar alguns minutos."):
+            resultados, ranking, msg = _call_simulation()
+
+    except requests.RequestException:
+        # Falha de rede ao acessar BACEN / fonte online
+        st.error("Não foi possível acessar a fonte online (BACEN). Tente novamente mais tarde ou carregue um CSV local de IPCA/TR.")
+        logger.exception("Falha de rede ao coletar dados online.")
+        resultados = ranking = msg = None
+
+    except FileNotFoundError as e:
+        st.error(f"Arquivo não encontrado: {e}")
+        logger.exception("Arquivo não encontrado durante a simulação.")
+        resultados = ranking = msg = None
+
     except ValueError as e:
-        # Autofix de schema + retry
+        # Possível schema faltando em bancos.csv — tentamos o autofix e reexecução
         missing = parse_missing_from_error(str(e))
         if missing:
-            ensure_bancos_schema(fontes.caminho_bancos, missing, fin.taxa_juros_anual)
-            resultados, ranking, msg = ControladorApp().simular_multiplos_bancos(
-                caminho_bancos_csv=fontes.caminho_bancos,
-                dados_financiamento={
-                    "valor_total": fin.valor_total,
-                    "entrada": fin.entrada,
-                    "prazo_anos": fin.prazo_anos,
-                    "taxa_juros_anual": fin.taxa_juros_anual,
-                },
-                fonte_ipca={"caminho_ipca": fontes.caminho_ipca},
-                fonte_tr={"fixture_csv_path": fontes.caminho_tr_compat},
-            )
+            st.info("Detectado problema no schema de bancos. Tentando aplicar correção automática e reexecutar...")
+            try:
+                ensure_bancos_schema(fontes.caminho_bancos, missing, fin.taxa_juros_anual)
+                with st.spinner("Aplicando correção e reexecutando a simulação..."):
+                    resultados, ranking, msg = _call_simulation()
+            except Exception as e2:
+                st.error(f"Falha ao aplicar correção automática ou reexecutar a simulação: {e2}")
+                logger.exception("Erro durante autofix e reexecucao")
+                resultados = ranking = msg = None
         else:
-            st.error(f"Erro ao ler bancos.csv: {e}")
-            raise
+            st.error(f"Erro durante leitura/validação: {e}")
+            logger.exception("ValueError durante a simulação")
+            resultados = ranking = msg = None
 
-    # Tabela e export CSV
-    st.subheader("Ranking")
-    df_rank = pd.DataFrame(ranking, columns=["Oferta", "Total Pago"])
-    st.dataframe(df_rank.style.format({"Total Pago": brl}), use_container_width=True)
+    except KeyError as e:
+        # Exemplos: fonte não informada etc.
+        s = str(e)
+        if "Fonte do IPCA" in s or "caminho_ipca" in s:
+            st.error("Escolha uma fonte de IPCA: CSV local ou BACEN (série 433).")
+        else:
+            st.error(f"Erro de configuração: {e}")
+        logger.exception("KeyError durante a simulação")
+        resultados = ranking = msg = None
 
-    out_dir = Path("resultados"); out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "ranking.csv").write_text(df_rank.to_csv(index=False, encoding="utf-8"), encoding="utf-8")
-    st.caption(f"CSV salvo em: {out_dir/'ranking.csv'}")
-    logger.info("Salvo: %s", (out_dir/"ranking.csv").resolve())
+    except Exception as e:
+        # Erro inesperado — não vaza stacktrace para o usuário
+        logger.exception("Erro inesperado durante a simulacao")
+        st.error("Erro inesperado durante a simulação. Consulte os logs para detalhes.")
+        resultados = ranking = msg = None
 
-    st.info(msg)
+    # Se a simulação obteve resultados, seguimos com export/exibição
+    if resultados is not None and ranking is not None:
+        # Tabela e export CSV
+        st.subheader("Ranking")
+        df_rank = pd.DataFrame(ranking, columns=["Oferta", "Total Pago"])
+        st.dataframe(df_rank.style.format({"Total Pago": brl}), use_container_width=True)
 
-    # Gráfico Ranking (salvar antes de exibir)
-    st.subheader("Ranking — Total Pago")
-    fig_r = plot_ranking(df_rank, fmt_axis=FuncFormatter(lambda x,_: "R$ " + f"{x:,.0f}".replace(",", "X").replace(".", ",").replace("X",".")))
-    out_g = out_dir / "graficos"; out_g.mkdir(parents=True, exist_ok=True)
-    save_fig_png(fig_r, out_g / "ranking.png")
-    st.caption(f"PNG salvo em: {out_g/'ranking.png'}")
-    st.pyplot(fig_r, clear_figure=False)
-    logger.info("Salvo: %s", (out_g/"ranking.png").resolve())
+        out_dir = Path("resultados"); out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "ranking.csv").write_text(df_rank.to_csv(index=False, encoding="utf-8"), encoding="utf-8")
+        st.caption(f"CSV salvo em: {out_dir/'ranking.csv'}")
+        logger.info("Salvo: %s", (out_dir/"ranking.csv").resolve())
 
-    # Gráfico Top-3
-    st.subheader("Evolução do valor da parcela — Top 3")
-    fig_t3 = plot_top3(resultados, ranking[:3])
-   
-    st.pyplot(fig_t3, clear_figure=True)
-    
+        st.info(msg)
+
+        # Gráfico Ranking (salvar antes de exibir)
+        st.subheader("Ranking — Total Pago")
+        fig_r = plot_ranking(df_rank, fmt_axis=FuncFormatter(lambda x,_: "R$ " + f"{x:,.0f}".replace(",", "X").replace(".", ",").replace("X",".")))
+        out_g = out_dir / "graficos"; out_g.mkdir(parents=True, exist_ok=True)
+        save_fig_png(fig_r, out_g / "ranking.png")
+        st.caption(f"PNG salvo em: {out_g/'ranking.png'}")
+        st.pyplot(fig_r, clear_figure=False)
+        logger.info("Salvo: %s", (out_g/"ranking.png").resolve())
+
+        # Gráfico Top-3
+        st.subheader("Evolução do valor da parcela — Top 3")
+        fig_t3 = plot_top3(resultados, ranking[:3])
+        st.pyplot(fig_t3, clear_figure=True)
+    else:
+        # já mostramos a mensagem de erro acima; apenas não prosseguimos
+        st.warning("A simulação não foi concluída devido a erros. Verifique as mensagens acima.")
