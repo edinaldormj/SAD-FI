@@ -28,4 +28,6 @@ print(f"📊 Resultado obtido: {resultado}, Esperado: {esperado}")
 assert resultado == esperado, f"❌ Esperado {esperado}, mas obteve {resultado}"
 
 print("✅ Teste passou com sucesso!")
-input("Pressione Enter para sair...")
+if __name__ == "__main__":
+    input("Pressione Enter para sair...")
+
