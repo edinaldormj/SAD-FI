@@ -1,0 +1,92 @@
+@startuml SADFI_Classes_Aprimorado
+
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Arial"
+skinparam packageStyle rectangle
+skinparam dpi 150
+skinparam shadowing false
+skinparam linetype polyline
+skinparam ranksep 30
+skinparam nodesep 30
+
+left to right direction
+title Diagrama de Classes SADFI\n(Distribuição horizontal para A4 paisagem)
+
+package "Presentation" {
+  class UIApp <<controller>> {
+    + executar_interface()
+    + carregar_fontes()
+    + chamar_simulacao(dados_financiamento, fontes)
+  }
+
+  class FinanciamentoInput <<dto>> {
+    + valor_total: float
+    + entrada: float
+    + prazo_anos: int
+    + taxa_juros_anual: float
+  }
+
+  class PlotUtils <<util>> {
+    + plot_ranking(df)
+    + plot_top3(resultados, top3)
+  }
+
+  UIApp --> FinanciamentoInput
+  UIApp --> PlotUtils
+}
+
+package "Application" {
+  class ControladorApp <<controller>> {
+    - comparador: ComparadorModalidades
+    + executar_simulacao(dados_entrada: dict): SimulacaoResultado
+    + simular_multiplos_bancos(...): (dict, list, str)
+    + exportar_resultado(...): str
+  }
+
+  class AppComparador <<service>> {
+    + comparar_varios(resultados: dict): list
+    + recomendar(ranking: list, modalidades: dict): str
+    + mapear_modalidades(chaves: list): dict
+  }
+
+  UIApp --> ControladorApp
+  ControladorApp --> AppComparador
+}
+
+package "Domain" {
+  class Financiamento <<entity>>
+  class Parcela <<value>>
+  class SimulacaoResultado <<entity>>
+  class SimuladorSAC <<service>>
+  class SimuladorSAC_IPCA <<service>>
+  class ComparadorModalidades <<service>>
+  class RecomendadorModalidade <<service>>
+  class AntecipadorParcelas <<service>>
+
+  ControladorApp --> Financiamento
+  ControladorApp --> SimuladorSAC
+  ControladorApp --> SimuladorSAC_IPCA
+  ControladorApp --> ComparadorModalidades
+  ControladorApp --> RecomendadorModalidade
+  ControladorApp --> SimulacaoResultado
+}
+
+package "Infrastructure::Data" {
+  class TabelaIPCA <<service>>
+  class TabelaTR <<service>>
+  class ColetorBACEN <<service>>
+  class ColetorTR <<service>>
+  class ColetorTxJuros <<service>>
+  class LeitorBancos <<util>>
+  class ExportadorCSV <<util>>
+  class LeitorCSV <<util>>
+
+  SimuladorSAC_IPCA --> TabelaIPCA
+  SimuladorSAC --> TabelaTR
+  ControladorApp --> LeitorBancos
+  ControladorApp --> TabelaIPCA
+  ControladorApp --> TabelaTR
+  ControladorApp --> ExportadorCSV
+}
+
+@enduml

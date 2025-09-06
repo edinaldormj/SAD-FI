@@ -1,0 +1,147 @@
+@startuml Contexto_SAD-FI_Sprint3
+title SAD-FI — Diagrama de Contexto (Sprint 3, revisado)
+
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+skinparam rectangle {
+  BorderColor #4b5563
+  BackgroundColor #f9fafb
+}
+skinparam actor {
+  BorderColor #374151
+  BackgroundColor #eef2ff
+}
+skinparam database {
+  BorderColor #1f2937
+  BackgroundColor #f3f4f6
+}
+skinparam cloud {
+  BorderColor #374151
+  BackgroundColor #e5f2ff
+}
+skinparam folder {
+  BorderColor #374151
+  BackgroundColor #f8fafc
+}
+
+left to right direction
+
+' Atores e consumidores
+actor "Analista/Usuário" as User
+rectangle "Jupyter Notebook 02\n(Visualização & Evidências)" as NB
+rectangle "Roteiro E2E automatizado\n(Teste + Simulação + Exportações)" as E2E
+
+' Sistema alvo
+rectangle "SAD-FI (Sistema)" as SAD {
+  rectangle "UI mínima\n(camada de apresentação)" as UI
+  rectangle "ControladorApp\n(simular_multiplos_bancos)" as Controller
+  rectangle "Agregador de Bancos\n(normaliza/deduplica fontes locais)" as AGG
+}
+
+' Entradas/artefatos OFFLINE (preferido)
+database "dados/bancos.csv\n(nome, sistema, taxa_anual[fração])" as BANCOS
+database "dados/txjuros/IPCA_BACEN.csv\n(mensal, %, latin1 ;)" as IPCA_CSV
+database "dados/txjuros/TR_BACEN.csv\n(diário, %, latin1 ;)" as TR_CSV
+database "dados/txjuros/2025-07P_pre_903101.csv\n(Pré/ano ou mês → ano)" as PRE_CSV
+database "dados/txjuros/2025-07P_pos_TR_903201.csv\n(Pós TR/ano ou mês → ano)" as TRBK_CSV
+database "dados/txjuros/2025-07P_pos_IPCA_903203.csv\n(Pós IPCA/ano ou mês → ano)" as IPCABK_CSV
+database "dados/txjuros/TR_mensal_compat.csv\n(data,tr[fração])" as TR_COMPAT
+folder "dados/fontes_locais/*.csv" as FONTES_LOC
+
+' Saídas
+folder "resultados/\nranking.csv\nresultados/graficos/\nranking.png" as OUT
+folder "docs/out/prints/\n(figuras da UI e E2E)" as PRINTS
+folder "logs/\nexecucao.log" as LOGS
+
+' Fontes ONLINE (opcionais)
+cloud "BCB • SGS\n433(IPCA), 226(TR)\nHTTP JSON/CSV" as SGS
+cloud "BCB • Olinda v2\nreporttxjuros\nHTTP OData" as OLINDA
+cloud "Site BCB • ReportTxJuros\nExport CSV" as SITE
+
+' Relações principais (usuário / UI / notebook / sistema)
+User --> UI : interage\nseleciona arquivos\naciona simulação
+User --> NB : parametriza\nexecuta células
+
+UI --> Controller : simular_multiplos_bancos(\n  caminho_bancos_csv,\n  dados_financiamento,\n  fonte_ipca,\n  fonte_tr)
+NB --> Controller : simular_multiplos_bancos(\n  caminho_bancos_csv,\n  dados_financiamento,\n  fonte_ipca,\n  fonte_tr)
+
+' Fluxo OFFLINE preferido
+Controller --> BANCOS : lê
+Controller --> IPCA_CSV : lê via TabelaIPCA\n(fonte_ipca.caminho_ipca)
+Controller --> TR_COMPAT : lê via TabelaTR\n(fonte_tr.fixture_csv_path)
+
+' Geração de bancos.csv (agregador) a partir de fontes locais
+FONTES_LOC --> AGG : lê\nnormaliza\nmapeia modalidades
+AGG --> BANCOS : consolida e deduplica\n(dados/bancos.csv)
+
+' Geração dos artefatos OFFLINE a partir de CSVs reais via Notebook
+NB -> PRE_CSV : usa CSV Bacen
+NB -> TRBK_CSV : usa CSV Bacen
+NB -> IPCABK_CSV : usa CSV Bacen
+NB -> BANCOS : monta bancos.csv\n(SAC/SAC_TR/SAC_IPCA)
+
+' Derivação TR mensal compatível (a partir da série diária em %)
+TR_CSV --> NB : entrada (diária, %)
+NB --> TR_COMPAT : agrega mensal (último do mês)\nconverte %→fração\n(fill de meses faltantes)
+
+' Resultado para evidências (UI e Notebook)
+Controller --> UI : resultados, ranking,\nrecomendação
+Controller --> NB : resultados, ranking,\nrecomendação
+UI --> OUT : exporta CSV/PNG
+NB --> OUT : exporta CSV/PNG
+
+' Logs e evidências visuais
+UI --> LOGS : registra INFO/ERROR
+NB --> LOGS : registra INFO/ERROR
+Controller --> LOGS : registra etapas\n(fontes, ofertas, vencedor,\npaths de artefatos)
+User --> PRINTS : captura telas e trechos\nde log do terminal\n(UI, ranking, gráfico, E2E)
+
+' Online (opcional, fallback)
+Controller ..> SGS : coleta IPCA/TR\n(quando habilitado)
+Controller ..> OLINDA : coleta taxas\n(quando habilitado)
+SITE --> PRE_CSV
+SITE --> TRBK_CSV
+SITE --> IPCABK_CSV
+
+' Roteiro E2E automatizado
+E2E --> Controller : executa caminho crítico
+E2E --> OUT : verifica artefatos
+E2E --> LOGS : registra execução
+
+' Notas de Sprint (modalidades, robustez e padronização)
+note right of Controller
+  Modalidades: SAC, SAC_TR, SAC_IPCA
+  • Validação de schema de bancos.csv
+  • Mensagens explícitas de erro/aviso
+  • Carga única de IPCA/TR por execução
+  • Padding do IPCA quando necessário
+  • TR em fração (limiar heurístico)
+  • Ranking + recomendação unificados
+end note
+
+note bottom of OUT
+  Padronização de exportações:
+  • Diretórios e nomes convencionados
+  • Separador e encoding consistentes
+  • Artefatos equivalentes via UI e Notebook
+end note
+
+note right of PRINTS
+  Governança de artefatos:
+  • Prints organizados em docs/out/prints/
+  • Referências cruzadas no relatório
+  • Evidência visual da UI e do E2E
+end note
+
+note bottom of NB
+  Células chave:
+  2) Gera bancos.csv (CSV Bacen)
+  3) TR diária → mensal (TR_mensal_compat.csv)
+  4) Carrega IPCA (CSV Bacen)
+  5) Define fontes p/ Controlador
+  6) Executa ranking/recomendação
+  7) Gráfico Top-N e exportações
+end note
+
+@enduml
